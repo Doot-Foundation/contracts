@@ -48,7 +48,7 @@ export const AggregationProgram20 = ZkProgram({
 
         let currentSum: UInt64 = UInt64.from(0);
         for (let i = 0; i < 20; i++) {
-          currentSum.add(publicInput.pricesArray[i]);
+          currentSum = currentSum.add(publicInput.pricesArray[i]);
         }
 
         return currentSum.div(publicInput.count);
@@ -86,7 +86,7 @@ export const AggregationProgram100 = ZkProgram({
 
         let currentSum: UInt64 = UInt64.from(0);
         for (let i = 0; i < 100; i++) {
-          currentSum.add(publicInput.pricesArray[i]);
+          currentSum = currentSum.add(publicInput.pricesArray[i]);
         }
 
         return currentSum.div(publicInput.count);

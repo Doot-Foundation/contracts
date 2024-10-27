@@ -187,9 +187,6 @@ console.log('Step Proof100 Sanity Check.');
 proof100 = await testJsonRoundtrip(AggregationProof100, proof100);
 
 const jsonProof100 = proof100.toJSON();
-// console.log(jsonProof20);
-// const generatedProof = await AggregationProof20.fromJSON(jsonProof20);
-// console.log(generatedProof, typeof generatedProof);
 const jsonString100 = JSON.stringify(jsonProof100);
 const byteArray100 = new TextEncoder().encode(jsonString100);
 const sizeInBytes100 = byteArray100.length;
