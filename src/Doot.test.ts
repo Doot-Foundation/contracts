@@ -174,6 +174,15 @@ describe('Doot.js', () => {
         .sign([oraclePK])
         .send();
 
+      const values = await doot.offchainState.fields.tokenInformation.get(
+        Field(0)
+      );
+      const anotherValue = await doot.getPrices();
+
+      expect(Field.from(values.value.prices[0]).toString()).toEqual(
+        Field.from(anotherValue.prices[0]).toString()
+      );
+
       try {
         map.set(minaKey, Field.from(5248770931));
         updatedCommitment = map.getRoot();
@@ -202,7 +211,7 @@ describe('Doot.js', () => {
           .send();
 
         throw new Error('Expected_transaction_to_fail');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.log('');
       }
     });
@@ -280,7 +289,7 @@ describe('Doot.js', () => {
           .send();
 
         throw new Error('Expected_transaction_to_fail');
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.log();
       }
     });
