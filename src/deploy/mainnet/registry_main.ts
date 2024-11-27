@@ -3,7 +3,7 @@ dotenv.config();
 
 import { Mina, PublicKey, PrivateKey } from 'o1js';
 
-import { Registry } from '../../Registry';
+import { Registry } from '../../doot/Registry';
 import { MultiPackedStringFactory } from 'o1js-pack';
 
 import registryObj from '../../../keys/registry.json';

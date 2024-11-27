@@ -3,7 +3,7 @@ import {
   IpfsCID,
   TokenInformationArray,
   offchainState,
-} from '../../Doot.js';
+} from '../../doot/Doot.js';
 
 import {
   Mina,

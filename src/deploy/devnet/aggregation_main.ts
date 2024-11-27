@@ -16,7 +16,7 @@ import {
   AggregationProof100,
   PriceAggregationArray100,
   VerifyAggregationProofGenerated,
-} from '../../Aggregation.js';
+} from '../../doot/Aggregation.js';
 
 function testJsonRoundtrip<
   P extends Proof<any, any>,
