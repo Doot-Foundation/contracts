@@ -19,8 +19,9 @@
     "coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "format": "prettier --write --ignore-unknown **/*",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:doot": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/Doot.test.ts",
-    "test:registry": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/Registry.test.ts",
+    "test:doot": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Doot.test.ts",
+    "test:registry": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Registry.test.ts",
+    "test:aggregation": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Aggregation.test.ts",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix"
   },
@@ -40,9 +41,10 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.1.0",
+    "axios": "^1.7.8",
     "dotenv": "^16.4.5",
-    "o1js": "^1.9.1",
-    "o1js-pack": "^0.7.0"
+    "o1js": "^2.0.0",
+    "o1js-pack": "^0.8.0"
   },
   "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }

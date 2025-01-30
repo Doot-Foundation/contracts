@@ -2,12 +2,12 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { Mina, PublicKey, PrivateKey } from 'o1js';
-
-import { Registry } from '../../doot/Registry';
 import { MultiPackedStringFactory } from 'o1js-pack';
 
-import registryObj from '../../../keys/registry.json';
-import dootObj from '../../../keys/doot.json';
+import { Registry } from '../contracts/Registry';
+
+import registryObj from '@/keys/registry.json';
+import dootObj from '@/keys/doot.json';
 
 const DEPLOYER = process.env.DEPLOYER_PK;
 

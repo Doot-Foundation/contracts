@@ -24,7 +24,7 @@ export class Registry extends SmartContract {
 
     this.owner.requireEquals(PublicKey.empty());
 
-    this.owner.set(this.sender.getAndRequireSignatureV2());
+    this.owner.set(this.sender.getAndRequireSignature());
   }
 
   @method async upgrade(
@@ -37,7 +37,7 @@ export class Registry extends SmartContract {
     this.implementation.getAndRequireEquals();
     this.owner.getAndRequireEquals();
 
-    this.owner.requireEquals(this.sender.getAndRequireSignatureV2());
+    this.owner.requireEquals(this.sender.getAndRequireSignature());
 
     this.githubSourceLink.set(updatedGithubLink);
     this.ipfsSourceLink.set(updatedIPFSLink);

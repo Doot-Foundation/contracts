@@ -16,7 +16,7 @@ import {
   AggregationProof100,
   PriceAggregationArray100,
   VerifyAggregationProofGenerated,
-} from '../../doot/Aggregation.js';
+} from '../contracts/Aggregation.js';
 
 function testJsonRoundtrip<
   P extends Proof<any, any>,
@@ -99,13 +99,15 @@ const dummyInput100: PriceAggregationArray100 = new PriceAggregationArray100({
 console.log('Generated dummy input.');
 
 // BASE CASE 10
-let proof20 = await AggregationProgram20.base(dummyInput20);
+let proof20: AggregationProof20;
+({ proof: proof20 } = await AggregationProgram20.base(dummyInput20));
 proof20 satisfies AggregationProof20;
 proof20 = await testJsonRoundtrip(AggregationProof20, proof20);
 await verify(proof20.toJSON(), vk20);
 
 // BASE CASE 100
-let proof100 = await AggregationProgram100.base(dummyInput100);
+let proof100: AggregationProof100;
+({ proof: proof100 } = await AggregationProgram100.base(dummyInput100));
 proof100 satisfies AggregationProof100;
 proof100 = await testJsonRoundtrip(AggregationProof100, proof100);
 await verify(proof100.toJSON(), vk100);
@@ -144,22 +146,20 @@ console.log('\nProduced prices array 20 & 100 successfully. \n');
 // STEP CASE FOR PROOF 10
 const start20 = performance.now();
 
-proof20 = await AggregationProgram20.generateAggregationProof(
-  prices20,
-  proof20
-);
+let stepProof20;
+({ proof: stepProof20 } = await AggregationProgram20.step(prices20, proof20));
 console.log('Step Proof20 Generated.');
-proof20 satisfies AggregationProof20;
+stepProof20 satisfies AggregationProof20;
 console.log('Step Proof20 Sanity Check.');
-proof20 = await testJsonRoundtrip(AggregationProof20, proof20);
+stepProof20 = await testJsonRoundtrip(AggregationProof20, stepProof20);
 
-const jsonProof20 = proof20.toJSON();
+const jsonProof20 = stepProof20.toJSON();
 const jsonString20 = jsonProof20.proof;
 const byteArray20 = new TextEncoder().encode(jsonString20);
 const sizeInBytes20 = byteArray20.length;
 console.log('Total size of Proof20 :', sizeInBytes20 / 1000 + 'KB');
 
-const valid20 = await verify(proof20.toJSON(), vk20);
+const valid20 = await verify(stepProof20.toJSON(), vk20);
 if (!valid20) {
   console.error('\nERR! VALID 20 FAILED.\n');
   process.exit(1);
@@ -176,23 +176,24 @@ console.log('Completed step proof and validation for proof 20.\n');
 
 // STEP CASE FOR PROOF 100
 const start100 = performance.now();
+let stepProof100;
 
-proof100 = await AggregationProgram100.generateAggregationProof(
+({ proof: stepProof100 } = await AggregationProgram100.step(
   prices100,
   proof100
-);
+));
 console.log('Step Proof100 Generated.');
-proof100 satisfies AggregationProof100;
+stepProof100 satisfies AggregationProof100;
 console.log('Step Proof100 Sanity Check.');
-proof100 = await testJsonRoundtrip(AggregationProof100, proof100);
+stepProof100 = await testJsonRoundtrip(AggregationProof100, stepProof100);
 
-const jsonProof100 = proof100.toJSON();
+const jsonProof100 = stepProof100.toJSON();
 const jsonString100 = JSON.stringify(jsonProof100);
 const byteArray100 = new TextEncoder().encode(jsonString100);
 const sizeInBytes100 = byteArray100.length;
 console.log('Total size of Proof100 :', sizeInBytes100 / 1000 + 'KB');
 
-const valid100 = await verify(proof100.toJSON(), vk100);
+const valid100 = await verify(stepProof100.toJSON(), vk100);
 if (!valid100) {
   console.error('\nERR! VALID 100 FAILED.\n');
   process.exit(1);
@@ -202,7 +203,7 @@ const end100 = performance.now();
 
 console.log(
   'Expected == Output :',
-  expected100.toString() == proof100.publicOutput.toString()
+  expected100.toString() == stepProof100.publicOutput.toString()
 );
 
 console.log('Completed step proof and validation for proof 100.\n');

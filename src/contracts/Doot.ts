@@ -54,7 +54,7 @@ export class Doot extends SmartContract {
 
     this.commitment.set(updatedCommitment);
     this.ipfsCID.set(updatedIpfsCID);
-    this.owner.set(this.sender.getAndRequireSignatureV2());
+    this.owner.set(this.sender.getAndRequireSignature());
 
     const lastPriceInformation =
       await this.offchainState.fields.tokenInformation.get(Field(0));
@@ -73,7 +73,7 @@ export class Doot extends SmartContract {
     this.ipfsCID.getAndRequireEquals();
     this.owner.getAndRequireEquals();
 
-    this.owner.requireEquals(this.sender.getAndRequireSignatureV2());
+    this.owner.requireEquals(this.sender.getAndRequireSignature());
 
     this.commitment.set(updatedCommitment);
     this.ipfsCID.set(updatedIpfsCID);

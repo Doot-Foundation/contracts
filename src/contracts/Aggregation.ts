@@ -34,10 +34,17 @@ export const AggregationProgram20 = ZkProgram({
       privateInputs: [],
 
       async method(publicInput: PriceAggregationArray20) {
-        return UInt64.from(0);
+        let currentSum: UInt64 = UInt64.from(0);
+        for (let i = 0; i < 20; i++) {
+          currentSum = currentSum.add(publicInput.pricesArray[i]);
+        }
+
+        return {
+          publicOutput: currentSum.div(publicInput.count),
+        };
       },
     },
-    generateAggregationProof: {
+    step: {
       privateInputs: [SelfProof],
 
       async method(
@@ -51,7 +58,9 @@ export const AggregationProgram20 = ZkProgram({
           currentSum = currentSum.add(publicInput.pricesArray[i]);
         }
 
-        return currentSum.div(publicInput.count);
+        return {
+          publicOutput: currentSum.div(publicInput.count),
+        };
       },
     },
   },
@@ -72,10 +81,17 @@ export const AggregationProgram100 = ZkProgram({
       privateInputs: [],
 
       async method(publicInput: PriceAggregationArray100) {
-        return UInt64.from(0);
+        let currentSum: UInt64 = UInt64.from(0);
+        for (let i = 0; i < 100; i++) {
+          currentSum = currentSum.add(publicInput.pricesArray[i]);
+        }
+
+        return {
+          publicOutput: currentSum.div(publicInput.count),
+        };
       },
     },
-    generateAggregationProof: {
+    step: {
       privateInputs: [SelfProof],
 
       async method(
@@ -89,7 +105,9 @@ export const AggregationProgram100 = ZkProgram({
           currentSum = currentSum.add(publicInput.pricesArray[i]);
         }
 
-        return currentSum.div(publicInput.count);
+        return {
+          publicOutput: currentSum.div(publicInput.count),
+        };
       },
     },
   },

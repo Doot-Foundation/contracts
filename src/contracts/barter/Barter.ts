@@ -1,4 +1,3 @@
-import { Proof } from 'o1js';
 import {
   Secp256k1,
   Ecdsa,
@@ -40,15 +39,17 @@ console.timeEnd('keccak + ecdsa verify (compile)');
 
 console.time('keccak + ecdsa verify (prove)');
 
-const proof: keccakAndEcdsaProof = await keccakAndEcdsa.verifyEcdsa(
+let proofKeccak: keccakAndEcdsaProof;
+({ proof: proofKeccak } = await keccakAndEcdsa.verifyEcdsa(
   message,
   signature,
   publicKey
-);
+));
+
 console.timeEnd('keccak + ecdsa verify (prove)');
 
-proof.publicOutput.assertTrue('signature verifies');
-assert(await keccakAndEcdsa.verify(proof), 'proof verifies');
+proofKeccak.publicOutput.assertTrue('signature verifies');
+assert(await keccakAndEcdsa.verify(proofKeccak), 'proof verifies');
 
 // Hardcoded ethers.js signature and inputs for verification in o1js
 
@@ -83,12 +84,13 @@ await ecdsaEthers.compile();
 console.timeEnd('ecdsa / ethers verify (compile)');
 
 console.time('ecdsa / ethers verify (prove)');
-const proofE: ecdsaEthersProof = await ecdsaEthers.verifyEthers(
+let proofEcdsa: ecdsaEthersProof;
+({ proof: proofEcdsa } = await ecdsaEthers.verifyEthers(
   msgBytes,
   signatureE,
   publicKeyE
-);
+));
 console.timeEnd('ecdsa / ethers verify (prove)');
 
-proofE.publicOutput.assertTrue('signature verifies');
-assert(await ecdsaEthers.verify(proofE), 'proof verifies');
+proofEcdsa.publicOutput.assertTrue('signature verifies');
+assert(await ecdsaEthers.verify(proofEcdsa), 'proof verifies');

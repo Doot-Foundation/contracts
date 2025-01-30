@@ -1,5 +1,5 @@
-import { Doot, offchainState } from '../doot/Doot.js';
-import { AggregationProgram20 } from '../doot/Aggregation.js';
+import { Doot, offchainState } from '../contracts/Doot.js';
+import { AggregationProgram20 } from '../contracts/Aggregation.js';
 import { Cache, PrivateKey } from 'o1js';
 
 // Uploads the cached files to the set folder.
