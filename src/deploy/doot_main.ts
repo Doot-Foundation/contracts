@@ -13,6 +13,7 @@ import {
   CircuitString,
   Field,
   MerkleMapWitness,
+  UInt64,
 } from 'o1js';
 
 const doProofs = false;

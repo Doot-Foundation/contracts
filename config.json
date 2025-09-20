@@ -5,8 +5,6 @@
       "networkId": "testnet",
       "url": "https://api.minascan.io/node/devnet/v1/graphql",
       "keyPath": "keys/verify.json",
-      "feepayerKeyPath": "/home/botvenom/.cache/zkapp-cli/keys/bd3v_deployer.json",
-      "feepayerAlias": "bd3v_deployer",
       "fee": "0.1",
       "smartContract": "VerifyAggregationProofGenerated"
     },
@@ -14,8 +12,6 @@
       "networkId": "testnet",
       "url": "https://api.minascan.io/node/devnet/v1/graphql",
       "keyPath": "keys/doot.json",
-      "feepayerKeyPath": "/home/botvenom/.cache/zkapp-cli/keys/bd3v_deployer.json",
-      "feepayerAlias": "bd3v_deployer",
       "fee": "0.1",
       "smartContract": "Doot"
     },
@@ -23,9 +19,28 @@
       "networkId": "testnet",
       "url": "https://api.minascan.io/node/devnet/v1/graphql",
       "keyPath": "keys/registry.json",
-      "feepayerKeyPath": "/home/botvenom/.cache/zkapp-cli/keys/bd3v_deployer.json",
-      "feepayerAlias": "bd3v_deployer",
       "fee": "0.1",
+      "smartContract": "Registry"
+    },
+    "zeko-verify": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
+      "smartContract": "VerifyAggregationProofGenerated"
+    },
+    "zeko-doot": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
+      "smartContract": "Doot"
+    },
+    "zeko-registry": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
       "smartContract": "Registry"
     }
   }

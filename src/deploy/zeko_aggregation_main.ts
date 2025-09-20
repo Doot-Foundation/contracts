@@ -1,10 +1,4 @@
-import {
-  UInt64,
-  Mina,
-  AccountUpdate,
-  PrivateKey,
-  verify,
-} from 'o1js';
+import { UInt64, Mina, AccountUpdate, PrivateKey, verify } from 'o1js';
 
 import {
   AggregationProgram20,
@@ -30,11 +24,15 @@ const deployer = deployerPK.toPublicKey();
 const zkappKey = PrivateKey.random();
 const zkapp = zkappKey.toPublicKey();
 
-console.log('\nCompiling...');
+console.log('Starting Aggregation deployment on Zeko L2...\n');
+console.log('Deployer:', deployer.toBase58());
+console.log('Contract address:', zkapp.toBase58());
+
+console.log('\n Compiling...');
 const { verificationKey: vk20 } = await AggregationProgram20.compile();
 await VerifyAggregationProofGenerated.compile();
 
-console.log('\nDeploying...');
+console.log('Deploying...');
 const VerifyContract = new VerifyAggregationProofGenerated(zkapp);
 await Mina.transaction(deployer, async () => {
   AccountUpdate.fundNewAccount(deployer);
@@ -44,7 +42,7 @@ await Mina.transaction(deployer, async () => {
   .sign([deployerPK, zkappKey])
   .send();
 
-console.log('\nGenerating proof...');
+console.log('Generating proof...');
 const dummy20 = generateDummy(20);
 const dummyInput20: PriceAggregationArray20 = new PriceAggregationArray20({
   pricesArray: dummy20,
@@ -56,11 +54,11 @@ let proof20: AggregationProof20;
 
 const valid20 = await verify(proof20.toJSON(), vk20);
 if (!valid20) {
-  console.error('Proof verification failed');
+  console.error('ERR! Proof verification failed');
   process.exit(1);
 }
 
-console.log('\nVerifying in contract...');
+console.log('Verifying in contract...');
 await Mina.transaction(deployer, async () => {
   await VerifyContract.verifyAggregationProof20(proof20);
 })
@@ -68,6 +66,6 @@ await Mina.transaction(deployer, async () => {
   .sign([deployerPK])
   .send();
 
-console.log('\n✅ Aggregation contract deployed and tested successfully!');
+console.log('\nAggregation contract deployed successfully on Zeko L2!');
 console.log('Contract address:', zkapp.toBase58());
 console.log('Proof output:', proof20.publicOutput.toString());

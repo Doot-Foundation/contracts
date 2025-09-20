@@ -1,8 +1,8 @@
 # NodeJS
+.env
 node_modules
 build
 coverage
-.env
 config.json
 doot_cache
 
@@ -14,3 +14,5 @@ doot_cache
 
 # Never commit keys to Git!
 keys
+
+CLAUDE.md
