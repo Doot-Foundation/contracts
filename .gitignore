@@ -16,3 +16,6 @@ doot_cache
 keys
 
 CLAUDE.md
+
+aggregation_cache_files/
+doot_cache_files/

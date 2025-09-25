@@ -59,15 +59,20 @@ if (!DEPLOYER_PK || !DOOT_CALLER_PK) {
 const deployerPrivateKey = PrivateKey.fromBase58(DEPLOYER_PK);
 const deployerPublicKey = deployerPrivateKey.toPublicKey();
 
-const oraclePrivateKey = PrivateKey.fromBase58(DOOT_CALLER_PK);
-const oraclePublicKey = oraclePrivateKey.toPublicKey();
+const dootCallerPrivateKey = PrivateKey.fromBase58(DOOT_CALLER_PK);
+const dootCallerPublicKey = dootCallerPrivateKey.toPublicKey();
 
 console.log('Keys loaded:');
 console.log(`   Deployer: ${deployerPublicKey.toBase58()}`);
-console.log(`   Oracle Caller: ${oraclePublicKey.toBase58()}\n`);
+console.log(`   Oracle Caller: ${dootCallerPublicKey.toBase58()}\n`);
+
+const minaDootPK = process.env.MINA_DOOT_PK;
+
+let zkappKey;
+if (!minaDootPK) zkappKey = PrivateKey.random();
+else zkappKey = PrivateKey.fromBase58(minaDootPK);
 
 // Contract Configuration
-let zkappKey = PrivateKey.random();
 let zkappAddress = zkappKey.toPublicKey();
 
 let dootZkApp = new Doot(zkappAddress);
@@ -141,9 +146,26 @@ const endDeploy = performance.now();
 console.log(`Deployment completed in ${(endDeploy - startDeploy) / 1000}s`);
 console.log(`Transaction hash: ${deployResponse.hash}\n`);
 
-// Wait for deployment confirmation on L2 (Zeko confirms within ~5 seconds)
-console.log('Waiting for L2 confirmation (~5 seconds)...');
-await new Promise((resolve) => setTimeout(resolve, 6000)); // Simple 6 second wait
+// Wait for deployment confirmation on L2 (Zeko confirms within ~10-25 seconds)
+console.log('Waiting for L2 confirmation (up to 25 seconds)...');
+
+// Helper function to wait for transaction confirmation (Zeko L2 approach)
+async function waitForTransaction(txHash: string): Promise<void> {
+  console.log(`Waiting for transaction confirmation: ${txHash}`);
+  console.log('⏳ Zeko L2 finality typically takes 10-25 seconds...');
+
+  // For Zeko L2, finality is much faster than Mina L1
+  const confirmationTime = 25 * 1000; // 25 seconds in milliseconds
+
+  console.log('⏳ Waiting 25 seconds for L2 confirmation (fast finality)...');
+  await new Promise((resolve) => setTimeout(resolve, confirmationTime));
+
+  console.log(
+    `✅ Transaction confirmed (assumed based on L2 finality): ${txHash}`
+  );
+}
+
+await waitForTransaction(deployResponse.hash);
 console.log('Deployment confirmed on Zeko L2!\n');
 
 // Initialize Oracle Data
@@ -212,7 +234,7 @@ let tokensInfo: TokenInformationArray = new TokenInformationArray({
 console.log('Calling initBase...');
 const initTxn = await Mina.transaction(
   {
-    sender: oraclePublicKey,
+    sender: dootCallerPublicKey,
     fee: UInt64.from(0.1e9), // Increased fee for initialization
     memo: 'Doot Oracle Initialization',
   },
@@ -222,12 +244,12 @@ const initTxn = await Mina.transaction(
 );
 
 await initTxn.prove();
-initTxn.sign([oraclePrivateKey]);
+initTxn.sign([dootCallerPrivateKey]);
 
 const initResponse = await initTxn.send();
 console.log(`Init transaction: ${initResponse.hash}`);
 
-await new Promise((resolve) => setTimeout(resolve, 6000)); // 6 second wait for L2 confirmation
+await waitForTransaction(initResponse.hash);
 console.log('SUCCESS! Oracle initialized!\n');
 
 // Settle Off-chain State
@@ -237,7 +259,7 @@ let proof = await dootZkApp.offchainState.createSettlementProof();
 
 const settleTxn = await Mina.transaction(
   {
-    sender: oraclePublicKey,
+    sender: dootCallerPublicKey,
     fee: UInt64.from(0.1e9), // Increased fee for settlement
     memo: 'Off-chain State Settlement',
   },
@@ -247,12 +269,12 @@ const settleTxn = await Mina.transaction(
 );
 
 await settleTxn.prove();
-settleTxn.sign([oraclePrivateKey]);
+settleTxn.sign([dootCallerPrivateKey]);
 
 const settleResponse = await settleTxn.send();
 console.log(`Settlement transaction: ${settleResponse.hash}`);
 
-await new Promise((resolve) => setTimeout(resolve, 6000)); // 6 second wait for L2 confirmation
+await waitForTransaction(settleResponse.hash);
 console.log('SUCCESS! Off-chain state settled!\n');
 
 // Verification (Now we can safely read from off-chain state)
@@ -277,7 +299,7 @@ const ipfsHash = IpfsCID.unpack(onChainIpfsCID.packed)
 console.log(`\nDeployment Summary:`);
 console.log(`   Network:     Zeko L2 Devnet`);
 console.log(`   Contract:    ${zkappAddress.toBase58()}`);
-console.log(`   Owner:       ${oraclePublicKey.toBase58()}`);
+console.log(`   Owner:       ${dootCallerPublicKey.toBase58()}`);
 console.log(`   IPFS Data:   ${ipfsHash}`);
 console.log(
   `   Explorer:    ${ZEKO_EXPLORER}/account/${zkappAddress.toBase58()}`
@@ -302,13 +324,13 @@ console.log(`\nMerkle Root Verification:`);
 const minaWitness = Map.getWitness(minaKey);
 const [rootMina] = minaWitness.computeRootAndKey(minaPrice);
 if (latestCommitment.equals(rootMina).toBoolean()) {
-  console.log(`Merkle root verified: ${rootMina.toString()}`);
+  console.log(`   Merkle root verified: ${rootMina.toString()}`);
 } else {
-  console.log(`ERR! Merkle root mismatch!`);
+  console.log(`   ERR! Merkle root mismatch!`);
 }
 
 console.log(`\nDoot Oracle successfully deployed to Zeko L2!`);
-console.log(`   Fast finality: ~10 seconds`);
+console.log(`   Fast finality: ~10-25 seconds`);
 console.log(`   Low fees: ~0.1 MINA per transaction`);
 console.log(`   Full compatibility with Mina tooling`);
 
@@ -316,7 +338,7 @@ console.log(`   Full compatibility with Mina tooling`);
 // const deploymentInfo = {
 //   network: 'zeko:devnet',
 //   contractAddress: zkappAddress.toBase58(),
-//   ownerAddress: oraclePublicKey.toBase58(),
+//   ownerAddress: dootCallerPublicKey.toBase58(),
 //   deploymentTx: deployResponse.hash,
 //   initTx: initResponse.hash,
 //   settleTx: settleResponse.hash,
@@ -340,4 +362,4 @@ console.log(`   Full compatibility with Mina tooling`);
 
 console.log(`\nDeployment complete! Add to your .env:`);
 console.log(`ZEKO_DOOT_ADDRESS=${zkappAddress.toBase58()}`);
-console.log(`ZEKO_DOOT_OWNER=${oraclePublicKey.toBase58()}`);
+console.log(`ZEKO_DOOT_OWNER=${dootCallerPublicKey.toBase58()}`);
