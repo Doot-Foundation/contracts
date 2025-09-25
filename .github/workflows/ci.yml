@@ -15,7 +15,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
       - name: Git checkout
         uses: actions/checkout@v4
       - name: NPM ci, build, & test
