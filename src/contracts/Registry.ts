@@ -1,52 +1,43 @@
-import {
-  SmartContract,
-  method,
-  State,
-  state,
-  PublicKey,
-  Field,
-  Poseidon,
-} from 'o1js';
+import { SmartContract, method, State, state, PublicKey, Field } from 'o1js';
 import { MultiPackedStringFactory } from 'o1js-pack';
 
-export class SourceCodeGithub extends MultiPackedStringFactory(3) {}
+// 32 - 1chars, 2 - 64chars
+export class SourceCodeGithub extends MultiPackedStringFactory(2) {}
 export class SourceCodeIPFS extends MultiPackedStringFactory(2) {}
 
 export class Registry extends SmartContract {
   @state(SourceCodeGithub) githubSourceLink = State<SourceCodeGithub>();
   @state(SourceCodeIPFS) ipfsSourceLink = State<SourceCodeIPFS>();
   @state(PublicKey) implementation = State<PublicKey>();
-  @state(Field) secretToken = State<Field>();
+  @state(PublicKey) owner = State<PublicKey>();
 
   init() {
     super.init();
   }
 
-  @method async initBase(secret: Field) {
+  // Can only be called once.
+  @method async initBase() {
     this.githubSourceLink.getAndRequireEquals();
     this.ipfsSourceLink.getAndRequireEquals();
     this.implementation.getAndRequireEquals();
-    this.secretToken.getAndRequireEquals();
+    this.owner.getAndRequireEquals();
 
-    // Can only be called once.
-    this.secretToken.requireEquals(Field(0));
+    this.owner.requireEquals(PublicKey.empty());
 
-    const toSet = Poseidon.hash([secret]);
-    this.secretToken.set(toSet);
+    this.owner.set(this.sender.getAndRequireSignature());
   }
 
-  @method async update(
+  @method async upgrade(
     updatedGithubLink: SourceCodeGithub,
     updatedIPFSLink: SourceCodeIPFS,
-    updatedImplementation: PublicKey,
-    secret: Field
+    updatedImplementation: PublicKey
   ) {
     this.githubSourceLink.getAndRequireEquals();
     this.ipfsSourceLink.getAndRequireEquals();
     this.implementation.getAndRequireEquals();
-    this.secretToken.getAndRequireEquals();
+    this.owner.getAndRequireEquals();
 
-    this.secretToken.requireEquals(Poseidon.hash([secret]));
+    this.owner.requireEquals(this.sender.getAndRequireSignature());
 
     this.githubSourceLink.set(updatedGithubLink);
     this.ipfsSourceLink.set(updatedIPFSLink);

@@ -1,12 +1,4 @@
-import {
-  Mina,
-  PrivateKey,
-  PublicKey,
-  AccountUpdate,
-  Field,
-  Poseidon,
-  assert,
-} from 'o1js';
+import { Mina, PrivateKey, PublicKey, AccountUpdate } from 'o1js';
 import { Registry, SourceCodeIPFS, SourceCodeGithub } from './Registry';
 
 describe('Registry', () => {
@@ -38,12 +30,6 @@ describe('Registry', () => {
   });
 
   describe('Init.', () => {
-    it('Should set the secret to Field(0).', async () => {
-      const expectedOutput = Field.from(0);
-      const onChainSecret = registry.secretToken.get();
-
-      expect(onChainSecret).toEqual(expectedOutput);
-    });
     it("Should set the Source Github to ''.", async () => {
       const expectedOutput = '';
       const onchainGithub = registry.githubSourceLink.get();
@@ -71,7 +57,6 @@ describe('Registry', () => {
   });
 
   describe('Update Base.', () => {
-    const secret = Field.random();
     const implementation = PrivateKey.random().toPublicKey();
 
     beforeAll(async () => {
@@ -83,32 +68,20 @@ describe('Registry', () => {
       );
 
       await Mina.transaction(deployer, async () => {
-        await registry.initBase(secret);
+        await registry.initBase();
       })
         .prove()
         .sign([deployerPK])
         .send();
 
       await Mina.transaction(deployer, async () => {
-        await registry.update(
-          updatedGithub,
-          updatedIpfs,
-          implementation,
-          secret
-        );
+        await registry.upgrade(updatedGithub, updatedIpfs, implementation);
       })
         .prove()
         .sign([deployerPK])
         .send();
     });
 
-    it(`Should set the secret to ${secret}`, async () => {
-      const onChainSecret = registry.secretToken.get();
-      const expected = Poseidon.hash([secret]);
-
-      assert(onChainSecret.toString() != Field.from(0).toString());
-      expect(expected).toEqual(onChainSecret);
-    });
     it('Should update the Source Github to https://github.com/Doot-Foundation/Doot_L1Contracts/', async () => {
       const expectedOutput =
         'https://github.com/Doot-Foundation/Doot_L1Contracts/';

@@ -1,13 +1,47 @@
 {
   "version": 1,
   "deployAliases": {
-    "devnet": {
+    "verify": {
       "networkId": "testnet",
       "url": "https://api.minascan.io/node/devnet/v1/graphql",
-      "keyPath": "keys/devnet.json",
-      "feepayerKeyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
-      "feepayerAlias": "deployer",
-      "fee": "0.1"
+      "keyPath": "keys/verify.json",
+      "fee": "0.1",
+      "smartContract": "VerifyAggregationProofGenerated"
+    },
+    "doot": {
+      "networkId": "testnet",
+      "url": "https://api.minascan.io/node/devnet/v1/graphql",
+      "keyPath": "keys/doot.json",
+      "fee": "0.1",
+      "smartContract": "Doot"
+    },
+    "registry": {
+      "networkId": "testnet",
+      "url": "https://api.minascan.io/node/devnet/v1/graphql",
+      "keyPath": "keys/registry.json",
+      "fee": "0.1",
+      "smartContract": "Registry"
+    },
+    "zeko-verify": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
+      "smartContract": "VerifyAggregationProofGenerated"
+    },
+    "zeko-doot": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
+      "smartContract": "Doot"
+    },
+    "zeko-registry": {
+      "networkId": "zeko:devnet",
+      "url": "https://devnet.zeko.io/graphql",
+      "keyPath": "/home/botvenom/.cache/zkapp-cli/keys/deployer.json",
+      "fee": "0.01",
+      "smartContract": "Registry"
     }
   }
 }

@@ -1,0 +1,89 @@
+-- Starting Doot Oracle deployment on Zeko L2 --
+
+Connected to Zeko Devnet
+Endpoint: https://devnet.zeko.io/graphql
+Explorer: https://zekoscan.io/testnet
+
+Keys loaded:
+   Deployer: B62qkoGddv1djrxNY7CAdrNWkkjrU72BKCoAfdKxWUqYV5bWk5kej27
+   Oracle Caller: B62qod2DugDjy9Jxhzd56gFS7npN8pWhanxxb36MLPzDDqtzzDyBy5z
+
+Doot Contract Keys:
+   Address: B62qrbDCjDYEypocUpG3m6eL62zcvexsaRjhSJp5JWUQeny1qVEKbyP
+   Private Key: []
+   SAVE THIS PRIVATE KEY - YOU'LL NEED IT FOR CONTRACT MANAGEMENT
+
+Compiling contracts...
+Compilation completed in 50.374572781000005s
+
+Checking account balances...
+WARN! Could not fetch account balance - continuing deployment...
+Deploying Doot Oracle to Zeko L2...
+Proving deployment transaction...
+Signing deployment transaction...
+Broadcasting to Zeko L2...
+Deployment completed in 1.2686200989999998s
+Transaction hash: 5Jv7rJwnBFRTAK6ijh2BsFZhct6ATi2sJmYoh74tnBnD31BVGsSd
+
+Waiting for L2 confirmation (up to 25 seconds)...
+Waiting for transaction confirmation: 5Jv7rJwnBFRTAK6ijh2BsFZhct6ATi2sJmYoh74tnBnD31BVGsSd
+⏳ Zeko L2 finality typically takes 10-25 seconds...
+⏳ Waiting 25 seconds for L2 confirmation (fast finality)...
+✅ Transaction confirmed (assumed based on L2 finality): 5Jv7rJwnBFRTAK6ijh2BsFZhct6ATi2sJmYoh74tnBnD31BVGsSd
+Deployment confirmed on Zeko L2!
+
+Initializing oracle with price data...
+Calling initBase...
+Init transaction: 5JuV3EFzfY9aWJxAAu7QHMynwBBk3Ra8mBLAC9LkWv8mW8KKonh7
+Waiting for transaction confirmation: 5JuV3EFzfY9aWJxAAu7QHMynwBBk3Ra8mBLAC9LkWv8mW8KKonh7
+⏳ Zeko L2 finality typically takes 10-25 seconds...
+⏳ Waiting 25 seconds for L2 confirmation (fast finality)...
+✅ Transaction confirmed (assumed based on L2 finality): 5JuV3EFzfY9aWJxAAu7QHMynwBBk3Ra8mBLAC9LkWv8mW8KKonh7
+SUCCESS! Oracle initialized!
+
+Settling off-chain state...
+Creating settlement proof (this may take 5-6 minutes)...
+Settlement transaction: 5JuKfiBfSrj7v8zaazHvrDmVGiupTWuFqhxtcnDgBzhcjRp4gjbT
+Waiting for transaction confirmation: 5JuKfiBfSrj7v8zaazHvrDmVGiupTWuFqhxtcnDgBzhcjRp4gjbT
+⏳ Zeko L2 finality typically takes 10-25 seconds...
+⏳ Waiting 25 seconds for L2 confirmation (fast finality)...
+✅ Transaction confirmed (assumed based on L2 finality): 5JuKfiBfSrj7v8zaazHvrDmVGiupTWuFqhxtcnDgBzhcjRp4gjbT
+SUCCESS! Off-chain state settled!
+
+Verifying deployment...
+WARN! Off-chain state read failed (expected during proof generation)
+Contract is deployed and functional
+
+Deployment Summary:
+   Network:     Zeko L2 Devnet
+   Contract:    B62qrbDCjDYEypocUpG3m6eL62zcvexsaRjhSJp5JWUQeny1qVEKbyP
+   Owner:       B62qod2DugDjy9Jxhzd56gFS7npN8pWhanxxb36MLPzDDqtzzDyBy5z
+   IPFS Data:   QmZekoL2DootOracleInitialData123456789ABCDEF
+   Explorer:    https://zekoscan.io/testnet/account/B62qrbDCjDYEypocUpG3m6eL62zcvexsaRjhSJp5JWUQeny1qVEKbyP
+   Deploy Tx:   5Jv7rJwnBFRTAK6ijh2BsFZhct6ATi2sJmYoh74tnBnD31BVGsSd
+   Init Tx:     5JuV3EFzfY9aWJxAAu7QHMynwBBk3Ra8mBLAC9LkWv8mW8KKonh7
+   Settle Tx:   5JuKfiBfSrj7v8zaazHvrDmVGiupTWuFqhxtcnDgBzhcjRp4gjbT
+
+Price Data Keys:
+   Mina:        1989438546984993991852416586310980857472650638889242549599372376960583391741
+   Bitcoin:     17600555501695449316793445277237960802091349442425146466162422302918169558170
+   Ethereum:    25753619616019388199954349189328435871651758597842055964981037826660120418625
+   Solana:      5339146385296207299460041331198251493679686742369686856229440847761758782063
+   Chainlink:   19856523601361987781145900008692200877217434798887517880367505960206314050380
+   Cardano:     1271940549935264938327257791510775575267760256152325382178351505334086255408
+   Avalanche:   16090623532261951809190577172532548536931452357768517730756924116569292510468
+   Ripple:      3771987357829653577216926395249277646659423184505255359421729100009575340987
+   Dogecoin:    545049269831032221993409722977093408320775581459497350531790035114105247532
+   Polygon:     19754442298412824114919750425959365778278938357182371026737843080674847831524
+
+Merkle Root Verification:
+   Merkle root verified: 16733762862062765396237534303749593103736903352501417198635138058885742504785
+
+Doot Oracle successfully deployed to Zeko L2!
+   Fast finality: ~10-25 seconds
+   Low fees: ~0.1 MINA per transaction
+   Full compatibility with Mina tooling
+
+Deployment complete! Add to your .env:
+ZEKO_DOOT_ADDRESS=B62qrbDCjDYEypocUpG3m6eL62zcvexsaRjhSJp5JWUQeny1qVEKbyP
+ZEKO_DOOT_OWNER=B62qod2DugDjy9Jxhzd56gFS7npN8pWhanxxb36MLPzDDqtzzDyBy5z

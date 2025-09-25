@@ -1,5 +1,5 @@
-import { Doot } from './Doot';
-import { Registry } from './Registry';
+import { Doot } from './contracts/Doot';
+import { Registry } from './contracts/Registry';
 import {
   AggregationProof20,
   AggregationProgram20,
@@ -8,7 +8,7 @@ import {
   AggregationProgram100,
   PriceAggregationArray100,
   VerifyAggregationProofGenerated,
-} from './Aggregation';
+} from './contracts/Aggregation';
 
 export {
   Doot,

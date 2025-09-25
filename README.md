@@ -22,3 +22,9 @@ A developer looking to fetch the exchange rate of one of the tracked cryptocurre
 ## AggregationProgram.ts
 
 This contract is responsible for creating aggregation proof of each asset updates. which enables the aggregation process to be verifiable by nature. Since its a general ZkProgram we employ this directly in our price generation CRON jobs.
+
+## Barter
+
+There are two parts to the story. One implemented on Mina and other on Ethereum (EVM in general.)
+The mina part deals with everything Mina Protocol.
+The ethereum part deals with everything EVM.

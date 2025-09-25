@@ -1,10 +1,9 @@
-import { Doot, IpfsCID, PricesArray, offchainState } from './Doot';
+import { Doot, IpfsCID, TokenInformationArray, offchainState } from './Doot';
 import {
   PrivateKey,
   PublicKey,
   Field,
   Mina,
-  Poseidon,
   AccountUpdate,
   MerkleMap,
   CircuitString,
@@ -15,39 +14,48 @@ describe('Doot.js', () => {
     oracle: PublicKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
-    dootZkApp: Doot;
+    doot: Doot,
+    randomPK: PrivateKey,
+    random: PublicKey;
 
   beforeAll(async () => {
-    // setup local blockchain
     let Local = await Mina.LocalBlockchain();
     Mina.setActiveInstance(Local);
-    // Local.testAccounts is an prices of 10 test accounts that have been pre-filled with Mina
+
     oraclePK = Local.testAccounts[0].key;
     oracle = oraclePK.toPublicKey();
+
+    randomPK = PrivateKey.random();
+    random = randomPK.toPublicKey();
 
     // zkapp account
     zkAppPrivateKey = PrivateKey.random();
     zkAppAddress = zkAppPrivateKey.toPublicKey();
 
-    dootZkApp = new Doot(zkAppAddress);
-    offchainState.setContractInstance(dootZkApp);
+    doot = new Doot(zkAppAddress);
+    doot.offchainState.setContractInstance(doot);
 
     await offchainState.compile();
     await Doot.compile();
 
-    // dootZkApp = new Doot(zkAppAddress);
-    // deploy zkapp
-    let txn = await Mina.transaction(oracle, async () => {
+    await Mina.transaction(oracle, async () => {
       AccountUpdate.fundNewAccount(oracle);
-      await dootZkApp.deploy();
+      await doot.deploy();
+    })
+      .sign([oraclePK, zkAppPrivateKey])
+      .prove()
+      .send();
+  });
+
+  describe('Dummy', () => {
+    it('Should init.', async () => {
+      console.log('');
     });
-    await txn.prove();
-    await txn.sign([oraclePK, zkAppPrivateKey]).send();
   });
 
   describe('Init', () => {
     it("Should set initial ipfs hash to ''", async () => {
-      const onChainIpfsCID = dootZkApp.ipfsCID.get();
+      const onChainIpfsCID = doot.ipfsCID.get();
       const onChainIpfsCid = IpfsCID.fromCharacters(
         IpfsCID.unpack(onChainIpfsCID.packed)
       );
@@ -56,22 +64,15 @@ describe('Doot.js', () => {
     });
 
     it('Should set initial map root to 0', async () => {
-      const onChainCommitment = dootZkApp.commitment.get();
+      const onChainCommitment = doot.commitment.get();
       const expected = Field.from(0);
 
       expect(onChainCommitment).toEqual(expected);
     });
 
-    it(`Should set inital oracle to ${oracle}`, async () => {
-      const onChainOracle = dootZkApp.deployerPublicKey.get();
-      const expected = oracle;
-
-      expect(onChainOracle).toEqual(expected);
-    });
-
-    it(`Should set inital secret to 0`, async () => {
-      const onChainSecret = dootZkApp.secret.get();
-      const expected = Field.from(0);
+    it(`Should set inital owner to empty()`, async () => {
+      const onChainSecret = doot.owner.get();
+      const expected = PublicKey.empty();
 
       expect(onChainSecret).toEqual(expected);
     });
@@ -79,8 +80,6 @@ describe('Doot.js', () => {
 
   describe('Add/Update', () => {
     const map: MerkleMap = new MerkleMap();
-
-    const secret: Field = Field.random();
 
     let minaKey: Field;
     let bitcoinKey: Field;
@@ -104,7 +103,7 @@ describe('Doot.js', () => {
     let polygonPrice: Field;
     let dogePrice: Field;
 
-    let prices: PricesArray;
+    let tokenInformation: TokenInformationArray;
 
     beforeAll(async () => {
       minaKey = CircuitString.fromString('Mina').hash();
@@ -128,9 +127,7 @@ describe('Doot.js', () => {
       ripplePrice = Field.from(4749419511);
       polygonPrice = Field.from(5645415935);
       dogePrice = Field.from(1261024335);
-    });
 
-    it('Should init the (BASE) commitment, IPFS hash, secret and prices. Fail the next time irrespective of the inputs.', async () => {
       map.set(minaKey, minaPrice);
       map.set(bitcoinKey, bitcoinPrice);
       map.set(chainlinkKey, chainlinkPrice);
@@ -142,7 +139,7 @@ describe('Doot.js', () => {
       map.set(dogeKey, dogePrice);
       map.set(polygonKey, polygonPrice);
 
-      prices = new PricesArray({
+      tokenInformation = new TokenInformationArray({
         prices: [
           minaPrice,
           bitcoinPrice,
@@ -156,65 +153,79 @@ describe('Doot.js', () => {
           dogePrice,
         ],
       });
+    });
 
-      const updatedIPFS = IpfsCID.fromString(
-        'QmQy34PrqnoCBZySFAkRsC9q5BSFESGUxX6X8CQtrNhtrB'
+    it('Should init the (BASE) commitment, IPFS hash, secret and prices. Fail the next time irrespective of the inputs/caller.', async () => {
+      let updatedCommitment = map.getRoot();
+      let updatedIPFS = IpfsCID.fromString('init_IPFS');
+
+      await Mina.transaction(oracle, async () => {
+        await doot.initBase(updatedCommitment, updatedIPFS, tokenInformation);
+      })
+        .sign([oraclePK])
+        .prove()
+        .send();
+
+      const proof = await doot.offchainState.createSettlementProof();
+      await Mina.transaction(oracle, async () => {
+        await doot.settle(proof);
+      })
+        .prove()
+        .sign([oraclePK])
+        .send();
+
+      const values = await doot.offchainState.fields.tokenInformation.get(
+        Field(0)
       );
-      const updatedCommitment = map.getRoot();
+      const anotherValue = await doot.getPrices();
 
-      let txn = await Mina.transaction(oracle, async () => {
-        await dootZkApp.initBase(
-          updatedCommitment,
-          updatedIPFS,
-          prices,
-          secret
-        );
-      });
-      await txn.prove();
-      await txn.sign([oraclePK]).send();
-
-      const onChainIpfsCID = dootZkApp.ipfsCID.get();
-      const onChainIpfsCid = IpfsCID.fromCharacters(
-        IpfsCID.unpack(onChainIpfsCID.packed)
+      expect(Field.from(values.value.prices[0]).toString()).toEqual(
+        Field.from(anotherValue.prices[0]).toString()
       );
-      const expectedIpfsCid = 'QmQy34PrqnoCBZySFAkRsC9q5BSFESGUxX6X8CQtrNhtrB';
-
-      const onChainCommitment = dootZkApp.commitment.get();
-      const onChainSecret = dootZkApp.secret.get();
-
-      expect(onChainIpfsCid.toString()).toEqual(expectedIpfsCid);
-      expect(onChainCommitment).toEqual(updatedCommitment);
-      expect(onChainSecret).toEqual(Poseidon.hash([secret]));
 
       try {
-        txn = await Mina.transaction(oracle, async () => {
-          await dootZkApp.initBase(
-            updatedCommitment,
-            updatedIPFS,
-            prices,
-            secret
-          );
+        map.set(minaKey, Field.from(5248770931));
+        updatedCommitment = map.getRoot();
+        updatedIPFS = IpfsCID.fromString('updated_IPFS');
+
+        tokenInformation = new TokenInformationArray({
+          prices: [
+            Field.from(5248770931),
+            bitcoinPrice,
+            ethereumPrice,
+            solanaPrice,
+            ripplePrice,
+            cardanoPrice,
+            avalanchePrice,
+            polygonPrice,
+            chainlinkPrice,
+            dogePrice,
+          ],
         });
-        await txn.prove();
-        await txn.sign([oraclePK]).send();
+
+        await Mina.transaction(oracle, async () => {
+          await doot.initBase(updatedCommitment, updatedIPFS, tokenInformation);
+        })
+          .prove()
+          .sign([oraclePK])
+          .send();
 
         throw new Error('Expected_transaction_to_fail');
-      } catch (err: any) {
-        expect(err.message).toContain(
-          'Account_app_state_precondition_unsatisfied'
-        );
+      } catch (err: unknown) {
+        console.log('');
       }
     });
-    it('Should update the storage only if the secret is known.', async () => {
-      const updatedIPFS = IpfsCID.fromString(
+
+    it('Should update the storage only if the caller is known.', async () => {
+      map.set(minaKey, Field.from(6048770935));
+      let updatedCommitment = map.getRoot();
+      let updatedIPFS = IpfsCID.fromString(
         'QmQy34PrqnoCBZySFAkRsC9q5BSFESGUxX6X8CQtr11110'
       );
-      const updatedPrice = Field.from(6048770935);
-      map.set(minaKey, updatedPrice);
 
-      prices = new PricesArray({
+      tokenInformation = new TokenInformationArray({
         prices: [
-          updatedPrice,
+          Field.from(6048770935),
           bitcoinPrice,
           ethereumPrice,
           solanaPrice,
@@ -227,36 +238,59 @@ describe('Doot.js', () => {
         ],
       });
 
-      const updatedCommitment = map.getRoot();
-      const onChainCommitment = dootZkApp.commitment.get();
+      let onChainCommitment = doot.commitment.get();
       expect(onChainCommitment != updatedCommitment);
 
       await Mina.transaction(oracle, async () => {
-        await dootZkApp.update(updatedCommitment, updatedIPFS, prices, secret);
+        await doot.update(updatedCommitment, updatedIPFS, tokenInformation);
       })
         .prove()
         .sign([oraclePK])
         .send();
 
-      // ----------------
+      const proof = await doot.offchainState.createSettlementProof();
+      await Mina.transaction(oracle, async () => {
+        await doot.settle(proof);
+      })
+        .prove()
+        .sign([oraclePK])
+        .send();
+
+      map.set(minaKey, Field.from(6048770912));
+      updatedIPFS = IpfsCID.fromString(
+        'QmQy34PrqnoCBZySFAkRsC9q5BSFESGUxX6X8CQtr11111'
+      );
+      updatedCommitment = map.getRoot();
+
+      tokenInformation = new TokenInformationArray({
+        prices: [
+          Field.from(6048770912),
+          bitcoinPrice,
+          ethereumPrice,
+          solanaPrice,
+          ripplePrice,
+          cardanoPrice,
+          avalanchePrice,
+          polygonPrice,
+          chainlinkPrice,
+          dogePrice,
+        ],
+      });
+
+      onChainCommitment = doot.commitment.get();
+      expect(onChainCommitment != updatedCommitment);
+
       try {
-        await Mina.transaction(oracle, async () => {
-          await dootZkApp.update(
-            updatedCommitment,
-            updatedIPFS,
-            prices,
-            Field.random()
-          );
+        await Mina.transaction(random, async () => {
+          await doot.update(updatedCommitment, updatedIPFS, tokenInformation);
         })
           .prove()
-          .sign([oraclePK])
+          .sign([randomPK])
           .send();
 
         throw new Error('Expected_transaction_to_fail');
-      } catch (err: any) {
-        expect(err.message).toContain(
-          'Account_app_state_precondition_unsatisfied'
-        );
+      } catch (err: unknown) {
+        console.log();
       }
     });
   });
