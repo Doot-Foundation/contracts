@@ -124,7 +124,7 @@ const startDeploy = performance.now();
 const deployTxn = await Mina.transaction(
   {
     sender: deployerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for deployment
+    fee: UInt64.from(0.5e9), // Increased fee for deployment
     memo: 'Doot Oracle L2 Deployment',
   },
   async () => {
@@ -235,7 +235,7 @@ console.log('Calling initBase...');
 const initTxn = await Mina.transaction(
   {
     sender: dootCallerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for initialization
+    fee: UInt64.from(0.5e9), // Increased fee for initialization
     memo: 'Doot Oracle Initialization',
   },
   async () => {
@@ -260,7 +260,7 @@ let proof = await dootZkApp.offchainState.createSettlementProof();
 const settleTxn = await Mina.transaction(
   {
     sender: dootCallerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for settlement
+    fee: UInt64.from(0.5e9), // Increased fee for settlement
     memo: 'Off-chain State Settlement',
   },
   async () => {

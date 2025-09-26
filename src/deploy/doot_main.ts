@@ -32,7 +32,8 @@ console.log('-- Starting Doot Oracle deployment on Mina L1 --\n');
 
 // Mina L1 Network Configuration
 const MINA_DEVNET_ENDPOINT = 'https://api.minascan.io/node/devnet/v1/graphql';
-const MINA_ARCHIVE_ENDPOINT = 'https://api.minascan.io/archive/devnet/v1/graphql';
+const MINA_ARCHIVE_ENDPOINT =
+  'https://api.minascan.io/archive/devnet/v1/graphql';
 const MINA_EXPLORER = 'https://devnet.minascan.io';
 
 // Initialize Mina L1 Network
@@ -120,7 +121,7 @@ const startDeploy = performance.now();
 const deployTxn = await Mina.transaction(
   {
     sender: deployerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for deployment
+    fee: UInt64.from(0.5e9), // Increased fee for deployment
     memo: 'Doot Oracle L1 Deployment',
   },
   async () => {
@@ -154,10 +155,14 @@ async function waitForTransaction(txHash: string): Promise<void> {
   // In production, you would query the GraphQL endpoint directly for more precise tracking
   const confirmationTime = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  console.log('⏳ Waiting 5 minutes for L1 confirmation (standard finality)...');
+  console.log(
+    '⏳ Waiting 5 minutes for L1 confirmation (standard finality)...'
+  );
   await new Promise((resolve) => setTimeout(resolve, confirmationTime));
 
-  console.log(`✅ Transaction confirmed (assumed based on L1 finality): ${txHash}`);
+  console.log(
+    `✅ Transaction confirmed (assumed based on L1 finality): ${txHash}`
+  );
 }
 
 await waitForTransaction(deployResponse.hash);
@@ -230,7 +235,7 @@ console.log('Calling initBase...');
 const initTxn = await Mina.transaction(
   {
     sender: dootCallerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for initialization
+    fee: UInt64.from(0.5e9), // Increased fee for initialization
     memo: 'Doot Oracle Initialization',
   },
   async () => {
@@ -255,7 +260,7 @@ let proof = await dootZkApp.offchainState.createSettlementProof();
 const settleTxn = await Mina.transaction(
   {
     sender: dootCallerPublicKey,
-    fee: UInt64.from(0.1e9), // Increased fee for settlement
+    fee: UInt64.from(0.5e9), // Increased fee for settlement
     memo: 'Off-chain State Settlement',
   },
   async () => {
