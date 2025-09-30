@@ -9,7 +9,7 @@ const aggregationCache: Cache = Cache.FileSystem('./aggregation_cache_files');
 // let zkappKey = PrivateKey.random();
 // let zkappAddress = zkappKey.toPublicKey();
 let zkappAddress = PublicKey.fromBase58(
-  'B62qrMZXUtHh9TDEoQRmse8mct1LEjMsirdXLrQxpoo92xsWC285TEn'
+  'B62qrbDCjDYEypocUpG3m6eL62zcvexsaRjhSJp5JWUQeny1qVEKbyP'
 );
 
 let dootZkApp = new Doot(zkappAddress);
