@@ -19,34 +19,31 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Mina L1 Deployment Script for Doot Oracle
+ * Zeko Alphanet Deployment Script for Doot Oracle
  *
  * Features:
- * - Deploys to Mina L1 Devnet
- * - Full decentralization and security
- * - Standard 3-5 minute finality
+ * - Deploys to Zeko Alphanet (production-grade L2)
+ * - Lower fees than Mina L1
+ * - Full compatibility with existing contract code
  * - Enhanced monitoring and verification
  */
 
-console.log('-- Starting Doot Oracle deployment on Mina L1 --\n');
+console.log('-- Starting Doot Oracle deployment on Zeko Alphanet --\n');
 
-// Mina L1 Network Configuration
-const MINA_DEVNET_ENDPOINT = 'https://api.minascan.io/node/devnet/v1/graphql';
-const MINA_ARCHIVE_ENDPOINT =
-  'https://api.minascan.io/archive/devnet/v1/graphql';
-const MINA_EXPLORER = 'https://devnet.minascan.io';
+// Zeko Alphanet Network Configuration
+const ZEKO_ALPHANET_ENDPOINT = 'https://alphanet.zeko.io/graphql';
+const ZEKO_EXPLORER = 'https://zekoscan.io/alphanet';
 
-// Initialize Mina L1 Network
-const MinaNetwork = Mina.Network({
-  mina: MINA_DEVNET_ENDPOINT,
-  archive: MINA_ARCHIVE_ENDPOINT,
+// Initialize Zeko Network
+const ZekoNetwork = Mina.Network({
+  mina: ZEKO_ALPHANET_ENDPOINT,
+  archive: ZEKO_ALPHANET_ENDPOINT,
 });
 
-Mina.setActiveInstance(MinaNetwork);
-console.log('Connected to Mina L1 Devnet');
-console.log(`Endpoint: ${MINA_DEVNET_ENDPOINT}`);
-console.log(`Archive: ${MINA_ARCHIVE_ENDPOINT}`);
-console.log(`Explorer: ${MINA_EXPLORER}\n`);
+Mina.setActiveInstance(ZekoNetwork);
+console.log('Connected to Zeko Alphanet');
+console.log(`Endpoint: ${ZEKO_ALPHANET_ENDPOINT}`);
+console.log(`Explorer: ${ZEKO_EXPLORER}\n`);
 
 // Environment Configuration
 const DEPLOYER_PK = process.env.DEPLOYER_PK;
@@ -69,19 +66,27 @@ console.log('Keys loaded:');
 console.log(`   Deployer: ${deployerPublicKey.toBase58()}`);
 console.log(`   Oracle Caller: ${dootCallerPublicKey.toBase58()}\n`);
 
-// Contract Configuration - Generate fresh random key for Mina L1
-let zkappKey = PrivateKey.random();
+// Use same contract key as Mina L1 deployment (with fallback to ZEKO_DOOT_PK for backwards compatibility)
+const dootContractPK = process.env.MINA_DOOT_PK || process.env.ZEKO_DOOT_PK;
+
+if (!dootContractPK) {
+  console.error('ERR! Missing MINA_DOOT_PK or ZEKO_DOOT_PK in .env file!');
+  console.error('Please deploy to Mina L1 first to generate the contract key.');
+  process.exit(1);
+}
+
+let zkappKey = PrivateKey.fromBase58(dootContractPK);
+
+// Contract Configuration
 let zkappAddress = zkappKey.toPublicKey();
 
 let dootZkApp = new Doot(zkappAddress);
 dootZkApp.offchainState.setContractInstance(dootZkApp);
 
-console.log(`Doot Contract Keys (SAVE THIS - NEEDED FOR ZEKO DEPLOYMENTS):`);
+console.log(`Doot Contract Keys (from Mina L1 deployment):`);
 console.log(`   Address: ${zkappAddress.toBase58()}`);
 console.log(`   Private Key: ${zkappKey.toBase58()}`);
-console.log(
-  `   SAVE THIS PRIVATE KEY - YOU'LL NEED IT FOR CONTRACT MANAGEMENT\n`
-);
+console.log(`   Using same contract address as Mina L1 and Zeko Devnet\n`);
 
 // Compilation
 console.log('Compiling contracts...');
@@ -99,6 +104,7 @@ console.log(
 try {
   console.log('Checking account balances...');
 
+  // Note: On Zeko L2, you may need to bridge funds from L1 first
   const deployerAccount = Mina.getAccount(deployerPublicKey);
   console.log(`Deployer balance: ${deployerAccount.balance.div(1e9)} MINA`);
 
@@ -106,7 +112,7 @@ try {
   const minBalance = UInt64.from(1e9); // 1 MINA minimum
   if (deployerAccount.balance.lessThan(minBalance)) {
     console.warn('WARN! Low deployer balance detected!');
-    console.warn('WARN! Consider adding more funds to deployer account');
+    console.warn('WARN! Consider bridging more funds from L1 to L2');
   }
 } catch (error) {
   console.warn(
@@ -115,14 +121,14 @@ try {
 }
 
 // Deployment
-console.log('Deploying Doot Oracle to Mina L1...');
+console.log('Deploying Doot Oracle to Zeko Alphanet...');
 const startDeploy = performance.now();
 
 const deployTxn = await Mina.transaction(
   {
     sender: deployerPublicKey,
     fee: UInt64.from(0.5e9), // Increased fee for deployment
-    memo: 'Doot Oracle L1 Deployment',
+    memo: 'Doot Oracle Alphanet Deployment',
   },
   async () => {
     AccountUpdate.fundNewAccount(deployerPublicKey, 1); // Fund 1 new account (the contract)
@@ -136,35 +142,34 @@ await deployTxn.prove();
 console.log('Signing deployment transaction...');
 await deployTxn.sign([deployerPrivateKey, zkappKey]);
 
-console.log('Broadcasting to Mina L1...');
+console.log('Broadcasting to Zeko Alphanet...');
 const deployResponse = await deployTxn.send();
 
 const endDeploy = performance.now();
 console.log(`Deployment completed in ${(endDeploy - startDeploy) / 1000}s`);
 console.log(`Transaction hash: ${deployResponse.hash}\n`);
 
-// Wait for deployment confirmation on L1 (Mina confirms within 3-10 minutes)
-console.log('Waiting for L1 confirmation (patient approach - up to 10 minutes)...');
+// Wait for deployment confirmation on L2 (Zeko confirms within ~10-25 seconds)
+console.log('Waiting for Alphanet confirmation (up to 25 seconds)...');
 
-// Helper function to wait for transaction confirmation with retry logic
+// Helper function to wait for transaction confirmation (Zeko L2 approach)
 async function waitForTransaction(txHash: string): Promise<void> {
   console.log(`Waiting for transaction confirmation: ${txHash}`);
-  console.log('⏳ Mina L1 finality can take 3-10 minutes (sometimes longer)...');
-  console.log('⏳ Waiting with 1-minute checks for up to 10 minutes...\n');
+  console.log('⏳ Zeko Alphanet finality typically takes 10-25 seconds...');
 
-  const maxWaitMinutes = 10;
-  const checkIntervalMinutes = 1;
+  // For Zeko L2, finality is much faster than Mina L1
+  const confirmationTime = 25 * 1000; // 25 seconds in milliseconds
 
-  for (let i = 1; i <= maxWaitMinutes; i++) {
-    console.log(`   ⏰ Minute ${i}/${maxWaitMinutes} - waiting for finality...`);
-    await new Promise((resolve) => setTimeout(resolve, checkIntervalMinutes * 60 * 1000));
-  }
+  console.log('⏳ Waiting 25 seconds for L2 confirmation (fast finality)...');
+  await new Promise((resolve) => setTimeout(resolve, confirmationTime));
 
-  console.log(`✅ Transaction assumed confirmed after ${maxWaitMinutes} minute wait: ${txHash}\n`);
+  console.log(
+    `✅ Transaction confirmed (assumed based on L2 finality): ${txHash}`
+  );
 }
 
 await waitForTransaction(deployResponse.hash);
-console.log('Deployment confirmed on Mina L1!\n');
+console.log('Deployment confirmed on Zeko Alphanet!\n');
 
 // Initialize Oracle Data
 console.log('Initializing oracle with price data...');
@@ -210,7 +215,7 @@ Map.set(polygonKey, polygonPrice);
 
 const latestCommitment: Field = Map.getRoot();
 const latestIPFSHash: IpfsCID = IpfsCID.fromString(
-  'QmMinaL1DootOracleInitialData123456789ABCDEF'
+  'QmZekoAlphanetDootOracleInitialData123456789'
 );
 
 let tokensInfo: TokenInformationArray = new TokenInformationArray({
@@ -228,101 +233,49 @@ let tokensInfo: TokenInformationArray = new TokenInformationArray({
   ],
 });
 
-// Initialize Oracle with retry logic
-console.log('Calling initBase (with retry for slow L1 state propagation)...');
-
-let initResponse;
-let initAttempts = 0;
-const maxInitAttempts = 5;
-
-while (initAttempts < maxInitAttempts) {
-  try {
-    initAttempts++;
-    console.log(`Init attempt ${initAttempts}/${maxInitAttempts}...`);
-
-    const initTxn = await Mina.transaction(
-      {
-        sender: dootCallerPublicKey,
-        fee: UInt64.from(0.5e9), // Increased fee for initialization
-        memo: 'Doot Oracle Initialization',
-      },
-      async () => {
-        await dootZkApp.initBase(latestCommitment, latestIPFSHash, tokensInfo);
-      }
-    );
-
-    await initTxn.prove();
-    initTxn.sign([dootCallerPrivateKey]);
-
-    initResponse = await initTxn.send();
-    console.log(`Init transaction: ${initResponse.hash}`);
-    break; // Success!
-  } catch (error: any) {
-    if (error.message?.includes('Could not fetch action state') || error.message?.includes('getAccount')) {
-      console.log(`   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`);
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-    } else {
-      throw error; // Unknown error, fail fast
-    }
+// Initialize Oracle
+console.log('Calling initBase...');
+const initTxn = await Mina.transaction(
+  {
+    sender: dootCallerPublicKey,
+    fee: UInt64.from(0.5e9), // Increased fee for initialization
+    memo: 'Doot Oracle Initialization',
+  },
+  async () => {
+    await dootZkApp.initBase(latestCommitment, latestIPFSHash, tokensInfo);
   }
-}
+);
 
-if (!initResponse) {
-  console.error('ERR! Failed to initialize oracle after maximum retries.');
-  console.error('The contract may need more time. Try running the init step separately later.');
-  process.exit(1);
-}
+await initTxn.prove();
+initTxn.sign([dootCallerPrivateKey]);
+
+const initResponse = await initTxn.send();
+console.log(`Init transaction: ${initResponse.hash}`);
 
 await waitForTransaction(initResponse.hash);
 console.log('SUCCESS! Oracle initialized!\n');
 
-// Settle Off-chain State with retry logic
-console.log('Settling off-chain state (with retry for slow L1 state propagation)...');
+// Settle Off-chain State
+console.log('Settling off-chain state...');
 console.log('Creating settlement proof (this may take 5-6 minutes)...');
+let proof = await dootZkApp.offchainState.createSettlementProof();
 
-let settleResponse;
-let settleAttempts = 0;
-const maxSettleAttempts = 5;
-
-while (settleAttempts < maxSettleAttempts) {
-  try {
-    settleAttempts++;
-    console.log(`Settlement attempt ${settleAttempts}/${maxSettleAttempts}...`);
-
-    let proof = await dootZkApp.offchainState.createSettlementProof();
-
-    const settleTxn = await Mina.transaction(
-      {
-        sender: dootCallerPublicKey,
-        fee: UInt64.from(0.5e9), // Increased fee for settlement
-        memo: 'Off-chain State Settlement',
-      },
-      async () => {
-        await dootZkApp.settle(proof);
-      }
-    );
-
-    await settleTxn.prove();
-    settleTxn.sign([dootCallerPrivateKey]);
-
-    settleResponse = await settleTxn.send();
-    console.log(`Settlement transaction: ${settleResponse.hash}`);
-    break; // Success!
-  } catch (error: any) {
-    if (error.message?.includes('Could not fetch action state') || error.message?.includes('getAccount')) {
-      console.log(`   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`);
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-    } else {
-      throw error; // Unknown error, fail fast
-    }
+const settleTxn = await Mina.transaction(
+  {
+    sender: dootCallerPublicKey,
+    fee: UInt64.from(0.5e9), // Increased fee for settlement
+    memo: 'Off-chain State Settlement',
+  },
+  async () => {
+    await dootZkApp.settle(proof);
   }
-}
+);
 
-if (!settleResponse) {
-  console.error('ERR! Failed to settle off-chain state after maximum retries.');
-  console.error('The contract may need more time. Try running the settlement step separately later.');
-  process.exit(1);
-}
+await settleTxn.prove();
+settleTxn.sign([dootCallerPrivateKey]);
+
+const settleResponse = await settleTxn.send();
+console.log(`Settlement transaction: ${settleResponse.hash}`);
 
 await waitForTransaction(settleResponse.hash);
 console.log('SUCCESS! Off-chain state settled!\n');
@@ -333,7 +286,7 @@ try {
   let allPrices = await dootZkApp.getPrices();
   console.log(`   On-chain Mina Price: ${allPrices.prices[0].toString()}`);
   console.log(`   Expected: ${minaPrice.toString()}`);
-  console.log(`   Match: ${allPrices.prices[0].equals(minaPrice).toBoolean()}`);
+  console.log(`Match: ${allPrices.prices[0].equals(minaPrice).toBoolean()}`);
 } catch (error) {
   console.log(
     `WARN! Off-chain state read failed (expected during proof generation)`
@@ -347,12 +300,12 @@ const ipfsHash = IpfsCID.unpack(onChainIpfsCID.packed)
   .join('');
 
 console.log(`\nDeployment Summary:`);
-console.log(`   Network:     Mina L1 Devnet`);
+console.log(`   Network:     Zeko Alphanet`);
 console.log(`   Contract:    ${zkappAddress.toBase58()}`);
 console.log(`   Owner:       ${dootCallerPublicKey.toBase58()}`);
 console.log(`   IPFS Data:   ${ipfsHash}`);
 console.log(
-  `   Explorer:    ${MINA_EXPLORER}/account/${zkappAddress.toBase58()}`
+  `   Explorer:    ${ZEKO_EXPLORER}/account/${zkappAddress.toBase58()}`
 );
 console.log(`   Deploy Tx:   ${deployResponse.hash}`);
 console.log(`   Init Tx:     ${initResponse.hash}`);
@@ -379,13 +332,12 @@ if (latestCommitment.equals(rootMina).toBoolean()) {
   console.log(`   ERR! Merkle root mismatch!`);
 }
 
-console.log(`\nDoot Oracle successfully deployed to Mina L1!`);
-console.log(`   Standard finality: 3-5 minutes`);
-console.log(`   Full decentralization and security`);
-console.log(`\n⚠️  IMPORTANT: Add this to your .env file for Zeko deployments:`);
-console.log(`MINA_DOOT_PK=${zkappKey.toBase58()}`);
-console.log(`   Compatible with all Mina tooling`);
+console.log(`\nDoot Oracle successfully deployed to Zeko Alphanet!`);
+console.log(`   Fast finality: ~10-25 seconds`);
+console.log(`   Low fees: ~0.1 MINA per transaction`);
+console.log(`   Full compatibility with Mina tooling`);
 
 console.log(`\nDeployment complete! Add to your .env:`);
-console.log(`MINA_DOOT_ADDRESS=${zkappAddress.toBase58()}`);
-console.log(`MINA_DOOT_OWNER=${dootCallerPublicKey.toBase58()}`);
+console.log(`ALPHANET_DOOT_ADDRESS=${zkappAddress.toBase58()}`);
+console.log(`ALPHANET_DOOT_OWNER=${dootCallerPublicKey.toBase58()}`);
+console.log(`ALPHANET_DOOT_PK=${zkappKey.toBase58()}`);

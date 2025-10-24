@@ -66,11 +66,16 @@ console.log('Keys loaded:');
 console.log(`   Deployer: ${deployerPublicKey.toBase58()}`);
 console.log(`   Oracle Caller: ${dootCallerPublicKey.toBase58()}\n`);
 
+// Use same contract key as Mina L1 deployment
 const minaDootPK = process.env.MINA_DOOT_PK;
 
-let zkappKey;
-if (!minaDootPK) zkappKey = PrivateKey.random();
-else zkappKey = PrivateKey.fromBase58(minaDootPK);
+if (!minaDootPK) {
+  console.error('ERR! Missing MINA_DOOT_PK in .env file!');
+  console.error('Please deploy to Mina L1 first to generate the contract key.');
+  process.exit(1);
+}
+
+let zkappKey = PrivateKey.fromBase58(minaDootPK);
 
 // Contract Configuration
 let zkappAddress = zkappKey.toPublicKey();
@@ -78,12 +83,10 @@ let zkappAddress = zkappKey.toPublicKey();
 let dootZkApp = new Doot(zkappAddress);
 dootZkApp.offchainState.setContractInstance(dootZkApp);
 
-console.log(`Doot Contract Keys:`);
+console.log(`Doot Contract Keys (from Mina L1 deployment):`);
 console.log(`   Address: ${zkappAddress.toBase58()}`);
 console.log(`   Private Key: ${zkappKey.toBase58()}`);
-console.log(
-  `   SAVE THIS PRIVATE KEY - YOU'LL NEED IT FOR CONTRACT MANAGEMENT\n`
-);
+console.log(`   Using same contract address as Mina L1\n`);
 
 // Compilation
 console.log('Compiling contracts...');
