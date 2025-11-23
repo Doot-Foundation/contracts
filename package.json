@@ -1,6 +1,6 @@
 {
   "name": "doot_mina_contracts",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Doot Oracle - Cryptographically verified price feeds on Mina Protocol with zero-knowledge proofs",
   "author": "Doot Foundation",
   "license": "Apache-2.0",
@@ -23,14 +23,10 @@
     "format": "prettier --write --ignore-unknown **/*",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:doot": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Doot.test.ts",
-    "test:registry": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Registry.test.ts",
-    "test:aggregation": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/contracts/Aggregation.test.ts",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
     "cache:build": "node build/src/cache/cache.js",
-    "deploy:doot": "node build/src/deploy/doot_main.js",
-    "deploy:registry": "node build/src/deploy/registry_main.js",
-    "deploy:aggregation": "node build/src/deploy/aggregation_main.js"
+    "deploy:doot": "node build/src/deploy/doot_main.js"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.26.0",

@@ -41,8 +41,10 @@ try {
 try {
   // Test off-chain state (this might fail)
   console.log('\nTesting off-chain state...');
-  const prices = await doot.getPrices();
-  console.log(`Mina price: ${prices.prices[0].toString()}`);
+  const snapshot = await doot.getPrices();
+  console.log(`Mina price: ${snapshot.prices[0].toString()}`);
+  console.log(`Price seq: ${snapshot.priceSeq.toString()}`);
+  console.log(`lastUpdatedAt(ms): ${snapshot.lastUpdatedAt.toString()}`);
   console.log('✅ Off-chain state working!');
 } catch (error) {
   console.error('❌ Off-chain state failed:', error);
