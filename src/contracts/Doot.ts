@@ -22,9 +22,10 @@ export class TokenInformationArray extends Struct({
   priceSeq: UInt64,
 }) {}
 
-// Input shape supplied by callers; contract derives timestamp and seq internally.
+// Input shape supplied by callers; contract derives sequence internally.
 export class TokenInformationArrayInput extends Struct({
   prices: Provable.Array(Field, 10),
+  lastUpdatedAt: UInt64,
 }) {}
 export const offchainState = OffchainState(
   {
@@ -112,11 +113,6 @@ export class Doot extends SmartContract {
     input: TokenInformationArrayInput,
     previous: Option<TokenInformationArray>
   ) {
-    const currentTimestamp = this.network.timestamp.get();
-    this.network.timestamp.requireEquals(currentTimestamp);
-    const currentSlot = this.network.globalSlotSinceGenesis.get();
-    this.network.globalSlotSinceGenesis.requireEquals(currentSlot);
-
     const previousTimestamp = Provable.if(
       previous.isSome,
       previous.value.lastUpdatedAt,
@@ -128,14 +124,13 @@ export class Doot extends SmartContract {
       UInt64.zero
     );
 
-    const nextTimestamp = Provable.if(
-      currentTimestamp.greaterThan(previousTimestamp),
-      currentTimestamp,
-      previousTimestamp.add(UInt64.one)
+    input.lastUpdatedAt.assertGreaterThan(
+      previousTimestamp,
+      'timestamp must increase'
     );
+    const nextTimestamp = input.lastUpdatedAt;
     const nextSeq = previousSeq.add(UInt64.one);
 
-    nextTimestamp.assertGreaterThan(previousTimestamp, 'timestamp must increase');
     nextSeq.assertGreaterThan(previousSeq, 'priceSeq must increase');
 
     return new TokenInformationArray({

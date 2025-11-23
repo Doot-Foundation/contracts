@@ -13,27 +13,33 @@ const MinaNetwork = Mina.Network({
 Mina.setActiveInstance(MinaNetwork);
 
 // Contract address from deployment
-const contractAddress = PublicKey.fromBase58('B62qpc3C3sERykDFCFSnTGWAn1jwr2cbe8YStggMsGn3MhmEW26GSwK');
+const contractAddress = PublicKey.fromBase58(
+  'B62qjsredUCoyXRkVwbJnXUzVCM3xjoVEsiX5t14KshXGz55jgfqpjm'
+);
 const doot = new Doot(contractAddress);
 
 try {
   // Test on-chain state reads only
   console.log('Fetching account data...');
-  await fetchAccount({ publicKey: contractAddress }, 'https://api.minascan.io/node/devnet/v1/graphql');
+  await fetchAccount(
+    { publicKey: contractAddress },
+    'https://api.minascan.io/node/devnet/v1/graphql'
+  );
 
   console.log('Reading on-chain state...');
   const commitment = doot.commitment.get();
   console.log(`Commitment: ${commitment.toString()}`);
 
   const ipfsCID = doot.ipfsCID.get();
-  const ipfsHash = IpfsCID.unpack(ipfsCID.packed).map(x => x.toString()).join('');
+  const ipfsHash = IpfsCID.unpack(ipfsCID.packed)
+    .map((x) => x.toString())
+    .join('');
   console.log(`IPFS Hash: ${ipfsHash}`);
 
   const owner = doot.owner.get();
   console.log(`Owner: ${owner.toBase58()}`);
 
   console.log('\n✅ On-chain state reads successful!');
-
 } catch (error) {
   console.error('❌ Error reading on-chain state:', error);
 }

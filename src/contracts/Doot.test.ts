@@ -12,6 +12,7 @@ import {
   AccountUpdate,
   MerkleMap,
   CircuitString,
+  UInt64,
   Signature,
 } from 'o1js';
 
@@ -27,10 +28,17 @@ describe('Doot.js', () => {
   const map: MerkleMap = new MerkleMap();
   const tokenKeys: Field[] = [];
   let prices: Field[] = [];
-  const buildPayload = (priceList: Field[]): TokenInformationArrayInput =>
-    new TokenInformationArrayInput({
+  let timestampCursor = UInt64.from(1_700_000_000_000n);
+  const timestampStep = UInt64.from(60_000);
+  let expectedSeq = 0n;
+
+  const buildPayload = (priceList: Field[]): TokenInformationArrayInput => {
+    timestampCursor = timestampCursor.add(timestampStep);
+    return new TokenInformationArrayInput({
       prices: [...priceList],
+      lastUpdatedAt: timestampCursor,
     });
+  };
 
   const settleState = async () => {
     const proof = await doot.offchainState.createSettlementProof();
@@ -132,11 +140,12 @@ describe('Doot.js', () => {
         .send();
 
       await settleState();
+      expectedSeq += 1n;
 
       const latest = await doot.getPrices();
       expect(latest.prices[0].toString()).toEqual(prices[0].toString());
-      expect(latest.priceSeq.toBigInt()).toEqual(1n);
-      expect(latest.lastUpdatedAt.toBigInt()).toBeGreaterThan(0n);
+      expect(latest.priceSeq.toBigInt()).toEqual(expectedSeq);
+      expect(latest.lastUpdatedAt.toBigInt()).toEqual(timestampCursor.toBigInt());
 
       const secondInit = (async () => {
         await Mina.transaction(oracle, async () => {
@@ -171,9 +180,10 @@ describe('Doot.js', () => {
         .send();
 
       await settleState();
+      expectedSeq += 1n;
 
       const afterOwnerUpdate = await doot.getPrices();
-      expect(afterOwnerUpdate.priceSeq.toBigInt()).toEqual(2n);
+      expect(afterOwnerUpdate.priceSeq.toBigInt()).toEqual(expectedSeq);
       expect(afterOwnerUpdate.lastUpdatedAt.toBigInt()).toBeGreaterThan(0n);
       expect(afterOwnerUpdate.prices[0].toString()).toEqual(prices[0].toString());
 
@@ -196,14 +206,34 @@ describe('Doot.js', () => {
       await expect(outsiderAttempt).rejects.toThrow();
 
       const unchanged = await doot.getPrices();
-      expect(unchanged.priceSeq.toBigInt()).toBeGreaterThan(0n);
+      expect(unchanged.priceSeq.toBigInt()).toEqual(expectedSeq);
     });
 
     it('rejects stale timestamps', async () => {
       const before = await doot.getPrices();
       setPrice(1, prices[1].add(Field.from(10)));
 
-      const updatedIPFS = IpfsCID.fromString('QmMonotonicTimestamp');
+      const stalePayload = new TokenInformationArrayInput({
+        prices: [...prices],
+        lastUpdatedAt: before.lastUpdatedAt,
+      });
+
+      const staleAttempt = (async () => {
+        await Mina.transaction(oracle, async () => {
+          await doot.update(
+            map.getRoot(),
+            IpfsCID.fromString('QmMonotonicTimestamp'),
+            stalePayload
+          );
+        })
+          .sign([oraclePK])
+          .prove()
+          .send();
+      })();
+
+      await expect(staleAttempt).rejects.toThrow();
+
+      const updatedIPFS = IpfsCID.fromString('QmMonotonicTimestampFresh');
       await Mina.transaction(oracle, async () => {
         await doot.update(map.getRoot(), updatedIPFS, buildPayload(prices));
       })
@@ -212,6 +242,7 @@ describe('Doot.js', () => {
         .send();
 
       await settleState();
+      expectedSeq += 1n;
 
       const latest = await doot.getPrices();
       expect(latest.lastUpdatedAt.toBigInt()).toBeGreaterThan(
@@ -232,6 +263,7 @@ describe('Doot.js', () => {
         .send();
 
       await settleState();
+      expectedSeq += 1n;
 
       const latest = await doot.getPrices();
       expect(latest.priceSeq.toBigInt()).toEqual(before.priceSeq.toBigInt() + 1n);
@@ -260,6 +292,7 @@ describe('Doot.js', () => {
         .sign([oraclePK])
         .prove()
         .send();
+      expectedSeq += 1n;
 
       // Second update and settlement
       setPrice(4, prices[4].add(Field.from(10)));
@@ -283,6 +316,7 @@ describe('Doot.js', () => {
         .sign([oraclePK])
         .prove()
         .send();
+      expectedSeq += 1n;
 
       // Old proof (proof1) is now stale relative to current commitments
       const staleSettleAttempt = (async () => {
@@ -297,7 +331,7 @@ describe('Doot.js', () => {
       await expect(staleSettleAttempt).rejects.toThrow();
 
       const latest = await doot.getPrices();
-      expect(latest.priceSeq.toBigInt()).toBeGreaterThan(1n);
+      expect(latest.priceSeq.toBigInt()).toEqual(expectedSeq);
       expect(latest.lastUpdatedAt.toBigInt()).toBeGreaterThan(1n);
     });
 

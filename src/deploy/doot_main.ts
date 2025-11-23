@@ -69,8 +69,11 @@ console.log('Keys loaded:');
 console.log(`   Deployer: ${deployerPublicKey.toBase58()}`);
 console.log(`   Oracle Caller: ${dootCallerPublicKey.toBase58()}\n`);
 
-// Contract Configuration - Generate fresh random key for Mina L1
-let zkappKey = PrivateKey.random();
+// Contract Configuration - Use provided key or generate fresh for Mina L1
+const envDootPk = process.env.MINA_DOOT_PK;
+let zkappKey = envDootPk
+  ? PrivateKey.fromBase58(envDootPk)
+  : PrivateKey.random();
 let zkappAddress = zkappKey.toPublicKey();
 
 let dootZkApp = new Doot(zkappAddress);
@@ -144,23 +147,33 @@ console.log(`Deployment completed in ${(endDeploy - startDeploy) / 1000}s`);
 console.log(`Transaction hash: ${deployResponse.hash}\n`);
 
 // Wait for deployment confirmation on L1 (Mina confirms within 3-10 minutes)
-console.log('Waiting for L1 confirmation (patient approach - up to 10 minutes)...');
+console.log(
+  'Waiting for L1 confirmation (patient approach - up to 20 minutes)...'
+);
 
 // Helper function to wait for transaction confirmation with retry logic
 async function waitForTransaction(txHash: string): Promise<void> {
   console.log(`Waiting for transaction confirmation: ${txHash}`);
-  console.log('⏳ Mina L1 finality can take 3-10 minutes (sometimes longer)...');
-  console.log('⏳ Waiting with 1-minute checks for up to 10 minutes...\n');
+  console.log(
+    '⏳ Mina L1 finality can take 3-20 minutes (sometimes longer)...'
+  );
+  console.log('⏳ Waiting with 1-minute checks for up to 20 minutes...\n');
 
-  const maxWaitMinutes = 10;
+  const maxWaitMinutes = 20;
   const checkIntervalMinutes = 1;
 
   for (let i = 1; i <= maxWaitMinutes; i++) {
-    console.log(`   ⏰ Minute ${i}/${maxWaitMinutes} - waiting for finality...`);
-    await new Promise((resolve) => setTimeout(resolve, checkIntervalMinutes * 60 * 1000));
+    console.log(
+      `   ⏰ Minute ${i}/${maxWaitMinutes} - waiting for finality...`
+    );
+    await new Promise((resolve) =>
+      setTimeout(resolve, checkIntervalMinutes * 60 * 1000)
+    );
   }
 
-  console.log(`✅ Transaction assumed confirmed after ${maxWaitMinutes} minute wait: ${txHash}\n`);
+  console.log(
+    `✅ Transaction assumed confirmed after ${maxWaitMinutes} minute wait: ${txHash}\n`
+  );
 }
 
 await waitForTransaction(deployResponse.hash);
@@ -225,6 +238,7 @@ let tokensInfo: TokenInformationArrayInput = new TokenInformationArrayInput({
     chainlinkPrice,
     dogePrice,
   ],
+  lastUpdatedAt: UInt64.from(Date.now()),
 });
 
 // Initialize Oracle with retry logic
@@ -257,8 +271,13 @@ while (initAttempts < maxInitAttempts) {
     console.log(`Init transaction: ${initResponse.hash}`);
     break; // Success!
   } catch (error: any) {
-    if (error.message?.includes('Could not fetch action state') || error.message?.includes('getAccount')) {
-      console.log(`   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`);
+    if (
+      error.message?.includes('Could not fetch action state') ||
+      error.message?.includes('getAccount')
+    ) {
+      console.log(
+        `   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`
+      );
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
     } else {
       throw error; // Unknown error, fail fast
@@ -268,7 +287,9 @@ while (initAttempts < maxInitAttempts) {
 
 if (!initResponse) {
   console.error('ERR! Failed to initialize oracle after maximum retries.');
-  console.error('The contract may need more time. Try running the init step separately later.');
+  console.error(
+    'The contract may need more time. Try running the init step separately later.'
+  );
   process.exit(1);
 }
 
@@ -276,7 +297,9 @@ await waitForTransaction(initResponse.hash);
 console.log('SUCCESS! Oracle initialized!\n');
 
 // Settle Off-chain State with retry logic
-console.log('Settling off-chain state (with retry for slow L1 state propagation)...');
+console.log(
+  'Settling off-chain state (with retry for slow L1 state propagation)...'
+);
 console.log('Creating settlement proof (this may take 5-6 minutes)...');
 
 let settleResponse;
@@ -308,8 +331,13 @@ while (settleAttempts < maxSettleAttempts) {
     console.log(`Settlement transaction: ${settleResponse.hash}`);
     break; // Success!
   } catch (error: any) {
-    if (error.message?.includes('Could not fetch action state') || error.message?.includes('getAccount')) {
-      console.log(`   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`);
+    if (
+      error.message?.includes('Could not fetch action state') ||
+      error.message?.includes('getAccount')
+    ) {
+      console.log(
+        `   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`
+      );
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
     } else {
       throw error; // Unknown error, fail fast
@@ -319,7 +347,9 @@ while (settleAttempts < maxSettleAttempts) {
 
 if (!settleResponse) {
   console.error('ERR! Failed to settle off-chain state after maximum retries.');
-  console.error('The contract may need more time. Try running the settlement step separately later.');
+  console.error(
+    'The contract may need more time. Try running the settlement step separately later.'
+  );
   process.exit(1);
 }
 
@@ -383,7 +413,9 @@ if (latestCommitment.equals(rootMina).toBoolean()) {
 console.log(`\nDoot Oracle successfully deployed to Mina L1!`);
 console.log(`   Standard finality: 3-5 minutes`);
 console.log(`   Full decentralization and security`);
-console.log(`\n⚠️  IMPORTANT: Add this to your .env file for Zeko deployments:`);
+console.log(
+  `\n⚠️  IMPORTANT: Add this to your .env file for Zeko deployments:`
+);
 console.log(`MINA_DOOT_PK=${zkappKey.toBase58()}`);
 console.log(`   Compatible with all Mina tooling`);
 

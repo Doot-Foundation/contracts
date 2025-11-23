@@ -4,7 +4,7 @@ Doot Oracle provides cryptographically verified price feeds on Mina. The active 
 
 ## Doot.ts
 - Stores a `TokenInformationArray` with `prices[10]`, `lastUpdatedAt` (wall-clock ms), and `priceSeq` (strictly increasing, +1 per update).
-- `initBase`/`update` derive `lastUpdatedAt` from `this.network.timestamp` and bump `priceSeq` automatically; callers only supply prices + commitment/IPFS.
+- Callers supply `lastUpdatedAt`; the contract enforces monotonicity and bumps `priceSeq` on-chain.
 - `getPrices()` returns the full struct so downstream consumers can gate settlement on both freshness and monotonic sequence.
 - Off-chain rollups enforce `lastUpdatedAt` and `priceSeq` growth; stale updates or proofs are rejected.
 - Helper `verifyPriceBundleSignature` verifies an owner signature over `(priceSeq, lastUpdatedAt, prices[])`.

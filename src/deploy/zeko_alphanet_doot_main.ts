@@ -230,6 +230,7 @@ let tokensInfo: TokenInformationArrayInput = new TokenInformationArrayInput({
     chainlinkPrice,
     dogePrice,
   ],
+  lastUpdatedAt: UInt64.from(Date.now()),
 });
 
 // Initialize Oracle

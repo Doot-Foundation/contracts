@@ -1,6 +1,6 @@
 {
   "name": "doot_mina_contracts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Doot Oracle - Cryptographically verified price feeds on Mina Protocol with zero-knowledge proofs",
   "author": "Doot Foundation",
   "license": "Apache-2.0",
