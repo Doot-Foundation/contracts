@@ -1,7 +1,7 @@
 import {
   Doot,
   IpfsCID,
-  TokenInformationArray,
+  TokenInformationArrayInput,
   offchainState,
 } from '../contracts/Doot.js';
 
@@ -217,8 +217,7 @@ const latestCommitment: Field = Map.getRoot();
 const latestIPFSHash: IpfsCID = IpfsCID.fromString(
   'QmZekoL2DootOracleInitialData123456789ABCDEF'
 );
-
-let tokensInfo: TokenInformationArray = new TokenInformationArray({
+let tokensInfo: TokenInformationArrayInput = new TokenInformationArrayInput({
   prices: [
     minaPrice,
     bitcoinPrice,
@@ -231,6 +230,7 @@ let tokensInfo: TokenInformationArray = new TokenInformationArray({
     chainlinkPrice,
     dogePrice,
   ],
+  lastUpdatedAt: UInt64.from(Date.now()),
 });
 
 // Initialize Oracle
@@ -287,6 +287,8 @@ try {
   console.log(`   On-chain Mina Price: ${allPrices.prices[0].toString()}`);
   console.log(`   Expected: ${minaPrice.toString()}`);
   console.log(`Match: ${allPrices.prices[0].equals(minaPrice).toBoolean()}`);
+  console.log(`   lastUpdatedAt(ms): ${allPrices.lastUpdatedAt.toString()}`);
+  console.log(`   priceSeq: ${allPrices.priceSeq.toString()}`);
 } catch (error) {
   console.log(
     `WARN! Off-chain state read failed (expected during proof generation)`

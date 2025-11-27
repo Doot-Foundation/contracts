@@ -1,5 +1,9 @@
 {
   "version": 1,
+  "priceMetadata": {
+    "timestampUnit": "ms_since_epoch",
+    "priceSeqDescription": "monotonic counter that increments by 1 every update"
+  },
   "deployAliases": {
     "devnet": {
       "networkId": "testnet",
