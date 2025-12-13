@@ -5,10 +5,10 @@ dotenv.config();
 
 console.log('Testing Mina L1 on-chain state reads...\n');
 
-// Mina L1 Network
+// Mina L1 Network (Mesa testnet)
 const MinaNetwork = Mina.Network({
-  mina: 'https://api.minascan.io/node/devnet/v1/graphql',
-  archive: 'https://api.minascan.io/archive/devnet/v1/graphql',
+  mina: 'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql',
+  archive: 'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql',
 });
 Mina.setActiveInstance(MinaNetwork);
 
@@ -23,7 +23,7 @@ try {
   console.log('Fetching account data...');
   await fetchAccount(
     { publicKey: contractAddress },
-    'https://api.minascan.io/node/devnet/v1/graphql'
+    'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql'
   );
 
   console.log('Reading on-chain state...');

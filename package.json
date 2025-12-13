@@ -46,7 +46,7 @@
     "@openzeppelin/contracts": "^5.1.0",
     "axios": "^1.7.8",
     "dotenv": "^16.4.5",
-    "o1js": "^2.9.0",
+    "o1js": "https://pkg.pr.new/o1-labs/o1js@e5011ff",
     "o1js-pack": "^0.8.0"
   },
   "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"

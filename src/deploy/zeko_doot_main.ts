@@ -2,7 +2,6 @@ import {
   Doot,
   IpfsCID,
   TokenInformationArrayInput,
-  offchainState,
 } from '../contracts/Doot.js';
 
 import {
@@ -81,7 +80,6 @@ let zkappKey = PrivateKey.fromBase58(minaDootPK);
 let zkappAddress = zkappKey.toPublicKey();
 
 let dootZkApp = new Doot(zkappAddress);
-dootZkApp.offchainState.setContractInstance(dootZkApp);
 
 console.log(`Doot Contract Keys (from Mina L1 deployment):`);
 console.log(`   Address: ${zkappAddress.toBase58()}`);
@@ -92,7 +90,6 @@ console.log(`   Using same contract address as Mina L1\n`);
 console.log('Compiling contracts...');
 const startCompile = performance.now();
 
-await offchainState.compile();
 await Doot.compile();
 
 const endCompile = performance.now();
@@ -255,32 +252,7 @@ console.log(`Init transaction: ${initResponse.hash}`);
 await waitForTransaction(initResponse.hash);
 console.log('SUCCESS! Oracle initialized!\n');
 
-// Settle Off-chain State
-console.log('Settling off-chain state...');
-console.log('Creating settlement proof (this may take 5-6 minutes)...');
-let proof = await dootZkApp.offchainState.createSettlementProof();
-
-const settleTxn = await Mina.transaction(
-  {
-    sender: dootCallerPublicKey,
-    fee: UInt64.from(0.5e9), // Increased fee for settlement
-    memo: 'Off-chain State Settlement',
-  },
-  async () => {
-    await dootZkApp.settle(proof);
-  }
-);
-
-await settleTxn.prove();
-settleTxn.sign([dootCallerPrivateKey]);
-
-const settleResponse = await settleTxn.send();
-console.log(`Settlement transaction: ${settleResponse.hash}`);
-
-await waitForTransaction(settleResponse.hash);
-console.log('SUCCESS! Off-chain state settled!\n');
-
-// Verification (Now we can safely read from off-chain state)
+// Verification (prices are stored directly on-chain)
 console.log('Verifying deployment...');
 try {
   let allPrices = await dootZkApp.getPrices();
@@ -291,9 +263,8 @@ try {
   console.log(`   priceSeq: ${allPrices.priceSeq.toString()}`);
 } catch (error) {
   console.log(
-    `WARN! Off-chain state read failed (expected during proof generation)`
+    `WARN! Price read failed (contract deployed but state not yet accessible)`
   );
-  console.log(`Contract is deployed and functional`);
 }
 
 const onChainIpfsCID = dootZkApp.ipfsCID.get();
@@ -311,7 +282,6 @@ console.log(
 );
 console.log(`   Deploy Tx:   ${deployResponse.hash}`);
 console.log(`   Init Tx:     ${initResponse.hash}`);
-console.log(`   Settle Tx:   ${settleResponse.hash}`);
 
 console.log(`\nPrice Data Keys:`);
 console.log(`   Mina:        ${minaKey.toString()}`);

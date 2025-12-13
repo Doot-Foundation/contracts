@@ -6,13 +6,10 @@ import {
   state,
   PublicKey,
   Signature,
-  Experimental,
   Struct,
   Provable,
   UInt64,
-  Option,
 } from 'o1js';
-const { OffchainState } = Experimental;
 import { MultiPackedStringFactory } from 'o1js-pack';
 
 // lastUpdatedAt uses wall-clock milliseconds; priceSeq is a strictly increasing counter.
@@ -27,13 +24,6 @@ export class TokenInformationArrayInput extends Struct({
   prices: Provable.Array(Field, 10),
   lastUpdatedAt: UInt64,
 }) {}
-export const offchainState = OffchainState(
-  {
-    tokenInformation: OffchainState.Map(Field, TokenInformationArray),
-  },
-  { maxActionsPerUpdate: 2 }
-);
-export class TokenInformationArrayProof extends offchainState.Proof {}
 
 export class IpfsCID extends MultiPackedStringFactory(2) {}
 
@@ -42,14 +32,12 @@ export class Doot extends SmartContract {
   @state(Field) commitment = State<Field>();
   @state(IpfsCID) ipfsCID = State<IpfsCID>();
   @state(PublicKey) owner = State<PublicKey>();
-  @state(OffchainState.Commitments) offchainStateCommitments =
-    offchainState.emptyCommitments();
+  @state(TokenInformationArray) tokenInformation =
+    State<TokenInformationArray>();
 
   init() {
     super.init();
   }
-
-  offchainState = offchainState.init(this);
 
   /// Can only be called once
   @method async initBase(
@@ -67,18 +55,14 @@ export class Doot extends SmartContract {
     this.ipfsCID.set(updatedIpfsCID);
     this.owner.set(this.sender.getAndRequireSignature());
 
-    const lastPriceInformation =
-      await this.offchainState.fields.tokenInformation.get(Field(0));
+    const lastPriceInformation = this.tokenInformation.getAndRequireEquals();
 
     const nextInformation = this.buildTokenInformation(
       informationArray,
       lastPriceInformation
     );
 
-    this.offchainState.fields.tokenInformation.update(Field(0), {
-      from: lastPriceInformation,
-      to: nextInformation,
-    });
+    this.tokenInformation.set(nextInformation);
   }
 
   @method async update(
@@ -95,34 +79,22 @@ export class Doot extends SmartContract {
     this.commitment.set(updatedCommitment);
     this.ipfsCID.set(updatedIpfsCID);
 
-    const lastPriceInformation =
-      await this.offchainState.fields.tokenInformation.get(Field(0));
+    const lastPriceInformation = this.tokenInformation.getAndRequireEquals();
 
     const nextInformation = this.buildTokenInformation(
       informationArray,
       lastPriceInformation
     );
 
-    this.offchainState.fields.tokenInformation.update(Field(0), {
-      from: lastPriceInformation,
-      to: nextInformation,
-    });
+    this.tokenInformation.set(nextInformation);
   }
 
   private buildTokenInformation(
     input: TokenInformationArrayInput,
-    previous: Option<TokenInformationArray>
+    previous: TokenInformationArray
   ) {
-    const previousTimestamp = Provable.if(
-      previous.isSome,
-      previous.value.lastUpdatedAt,
-      UInt64.zero
-    );
-    const previousSeq = Provable.if(
-      previous.isSome,
-      previous.value.priceSeq,
-      UInt64.zero
-    );
+    const previousTimestamp = previous.lastUpdatedAt;
+    const previousSeq = previous.priceSeq;
 
     input.lastUpdatedAt.assertGreaterThan(
       previousTimestamp,
@@ -140,10 +112,9 @@ export class Doot extends SmartContract {
     });
   }
 
-  @method.returns(TokenInformationArray)
-  async getPrices() {
-    return (await this.offchainState.fields.tokenInformation.get(Field(0)))
-      .value;
+  // Off-chain helper: reads the on-chain TokenInformationArray state.
+  getPrices() {
+    return this.tokenInformation.get();
   }
 
   @method async verifyPriceBundleSignature(
@@ -157,11 +128,6 @@ export class Doot extends SmartContract {
       ...payload.prices,
     ];
     signature.verify(owner, messageFields).assertTrue();
-  }
-
-  @method
-  async settle(proof: TokenInformationArrayProof) {
-    await this.offchainState.settle(proof);
   }
 
   @method async verify(

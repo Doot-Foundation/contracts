@@ -7,7 +7,7 @@
   "deployAliases": {
     "devnet": {
       "networkId": "testnet",
-      "url": "https://api.minascan.io/node/devnet/v1/graphql",
+      "url": "https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql",
       "keyPath": "keys/devnet.json",
       "feepayerKeyPath": "[YOUR_PATH_TO_KEY]",
       "feepayerAlias": "deployer",

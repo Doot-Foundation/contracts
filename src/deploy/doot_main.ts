@@ -2,7 +2,6 @@ import {
   Doot,
   IpfsCID,
   TokenInformationArrayInput,
-  offchainState,
 } from '../contracts/Doot.js';
 
 import {
@@ -13,6 +12,7 @@ import {
   CircuitString,
   Field,
   UInt64,
+  fetchAccount,
 } from 'o1js';
 
 import * as dotenv from 'dotenv';
@@ -22,7 +22,7 @@ dotenv.config();
  * Mina L1 Deployment Script for Doot Oracle
  *
  * Features:
- * - Deploys to Mina L1 Devnet
+ * - Deploys to Mina L1 Mesa testnet
  * - Full decentralization and security
  * - Standard 3-5 minute finality
  * - Enhanced monitoring and verification
@@ -31,9 +31,10 @@ dotenv.config();
 console.log('-- Starting Doot Oracle deployment on Mina L1 --\n');
 
 // Mina L1 Network Configuration
-const MINA_DEVNET_ENDPOINT = 'https://api.minascan.io/node/devnet/v1/graphql';
+const MINA_DEVNET_ENDPOINT =
+  'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql';
 const MINA_ARCHIVE_ENDPOINT =
-  'https://api.minascan.io/archive/devnet/v1/graphql';
+  'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql';
 const MINA_EXPLORER = 'https://devnet.minascan.io';
 
 // Initialize Mina L1 Network
@@ -43,7 +44,7 @@ const MinaNetwork = Mina.Network({
 });
 
 Mina.setActiveInstance(MinaNetwork);
-console.log('Connected to Mina L1 Devnet');
+console.log('Connected to Mina L1 Mesa testnet');
 console.log(`Endpoint: ${MINA_DEVNET_ENDPOINT}`);
 console.log(`Archive: ${MINA_ARCHIVE_ENDPOINT}`);
 console.log(`Explorer: ${MINA_EXPLORER}\n`);
@@ -77,7 +78,6 @@ let zkappKey = envDootPk
 let zkappAddress = zkappKey.toPublicKey();
 
 let dootZkApp = new Doot(zkappAddress);
-dootZkApp.offchainState.setContractInstance(dootZkApp);
 
 console.log(`Doot Contract Keys (SAVE THIS - NEEDED FOR ZEKO DEPLOYMENTS):`);
 console.log(`   Address: ${zkappAddress.toBase58()}`);
@@ -90,7 +90,6 @@ console.log(
 console.log('Compiling contracts...');
 const startCompile = performance.now();
 
-await offchainState.compile();
 await Doot.compile();
 
 const endCompile = performance.now();
@@ -124,7 +123,7 @@ const startDeploy = performance.now();
 const deployTxn = await Mina.transaction(
   {
     sender: deployerPublicKey,
-    fee: UInt64.from(0.5e9), // Increased fee for deployment
+    fee: UInt64.from(0.1e9), // Increased fee for deployment
     memo: 'Doot Oracle L1 Deployment',
   },
   async () => {
@@ -256,7 +255,7 @@ while (initAttempts < maxInitAttempts) {
     const initTxn = await Mina.transaction(
       {
         sender: dootCallerPublicKey,
-        fee: UInt64.from(0.5e9), // Increased fee for initialization
+        fee: UInt64.from(0.1e9), // Increased fee for initialization
         memo: 'Doot Oracle Initialization',
       },
       async () => {
@@ -296,69 +295,15 @@ if (!initResponse) {
 await waitForTransaction(initResponse.hash);
 console.log('SUCCESS! Oracle initialized!\n');
 
-// Settle Off-chain State with retry logic
-console.log(
-  'Settling off-chain state (with retry for slow L1 state propagation)...'
-);
-console.log('Creating settlement proof (this may take 5-6 minutes)...');
-
-let settleResponse;
-let settleAttempts = 0;
-const maxSettleAttempts = 5;
-
-while (settleAttempts < maxSettleAttempts) {
-  try {
-    settleAttempts++;
-    console.log(`Settlement attempt ${settleAttempts}/${maxSettleAttempts}...`);
-
-    let proof = await dootZkApp.offchainState.createSettlementProof();
-
-    const settleTxn = await Mina.transaction(
-      {
-        sender: dootCallerPublicKey,
-        fee: UInt64.from(0.5e9), // Increased fee for settlement
-        memo: 'Off-chain State Settlement',
-      },
-      async () => {
-        await dootZkApp.settle(proof);
-      }
-    );
-
-    await settleTxn.prove();
-    settleTxn.sign([dootCallerPrivateKey]);
-
-    settleResponse = await settleTxn.send();
-    console.log(`Settlement transaction: ${settleResponse.hash}`);
-    break; // Success!
-  } catch (error: any) {
-    if (
-      error.message?.includes('Could not fetch action state') ||
-      error.message?.includes('getAccount')
-    ) {
-      console.log(
-        `   ⚠️  L1 state not ready yet. Waiting 1 minute before retry...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
-    } else {
-      throw error; // Unknown error, fail fast
-    }
-  }
-}
-
-if (!settleResponse) {
-  console.error('ERR! Failed to settle off-chain state after maximum retries.');
-  console.error(
-    'The contract may need more time. Try running the settlement step separately later.'
-  );
-  process.exit(1);
-}
-
-await waitForTransaction(settleResponse.hash);
-console.log('SUCCESS! Off-chain state settled!\n');
-
-// Verification (Now we can safely read from off-chain state)
+// Verification (prices are stored directly on-chain)
 console.log('Verifying deployment...');
 try {
+  // Ensure we have the latest on-chain state for the contract.
+  await fetchAccount(
+    { publicKey: zkappAddress },
+    MINA_DEVNET_ENDPOINT
+  );
+
   let allPrices = await dootZkApp.getPrices();
   console.log(`   On-chain Mina Price: ${allPrices.prices[0].toString()}`);
   console.log(`   Expected: ${minaPrice.toString()}`);
@@ -367,9 +312,8 @@ try {
   console.log(`   priceSeq: ${allPrices.priceSeq.toString()}`);
 } catch (error) {
   console.log(
-    `WARN! Off-chain state read failed (expected during proof generation)`
+    `WARN! Price read failed; contract is deployed but state not yet accessible.`
   );
-  console.log(`Contract is deployed and functional`);
 }
 
 const onChainIpfsCID = dootZkApp.ipfsCID.get();
@@ -378,7 +322,7 @@ const ipfsHash = IpfsCID.unpack(onChainIpfsCID.packed)
   .join('');
 
 console.log(`\nDeployment Summary:`);
-console.log(`   Network:     Mina L1 Devnet`);
+console.log(`   Network:     Mina L1 Mesa testnet`);
 console.log(`   Contract:    ${zkappAddress.toBase58()}`);
 console.log(`   Owner:       ${dootCallerPublicKey.toBase58()}`);
 console.log(`   IPFS Data:   ${ipfsHash}`);
@@ -387,7 +331,6 @@ console.log(
 );
 console.log(`   Deploy Tx:   ${deployResponse.hash}`);
 console.log(`   Init Tx:     ${initResponse.hash}`);
-console.log(`   Settle Tx:   ${settleResponse.hash}`);
 
 console.log(`\nPrice Data Keys:`);
 console.log(`   Mina:        ${minaKey.toString()}`);

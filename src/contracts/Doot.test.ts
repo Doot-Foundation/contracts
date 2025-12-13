@@ -1,9 +1,4 @@
-import {
-  Doot,
-  IpfsCID,
-  TokenInformationArrayInput,
-  offchainState,
-} from './Doot';
+import { Doot, IpfsCID, TokenInformationArrayInput } from './Doot';
 import {
   PrivateKey,
   PublicKey,
@@ -40,16 +35,6 @@ describe('Doot.js', () => {
     });
   };
 
-  const settleState = async () => {
-    const proof = await doot.offchainState.createSettlementProof();
-    await Mina.transaction(oracle, async () => {
-      await doot.settle(proof);
-    })
-      .sign([oraclePK])
-      .prove()
-      .send();
-  };
-
   const setPrice = (index: number, value: Field) => {
     prices[index] = value;
     map.set(tokenKeys[index], value);
@@ -69,9 +54,7 @@ describe('Doot.js', () => {
     zkAppAddress = zkAppPrivateKey.toPublicKey();
 
     doot = new Doot(zkAppAddress);
-    doot.offchainState.setContractInstance(doot);
 
-    await offchainState.compile();
     await Doot.compile();
 
     await Mina.transaction(oracle, async () => {
@@ -139,7 +122,6 @@ describe('Doot.js', () => {
         .prove()
         .send();
 
-      await settleState();
       expectedSeq += 1n;
 
       const latest = await doot.getPrices();
@@ -179,7 +161,6 @@ describe('Doot.js', () => {
         .prove()
         .send();
 
-      await settleState();
       expectedSeq += 1n;
 
       const afterOwnerUpdate = await doot.getPrices();
@@ -241,7 +222,6 @@ describe('Doot.js', () => {
         .prove()
         .send();
 
-      await settleState();
       expectedSeq += 1n;
 
       const latest = await doot.getPrices();
@@ -262,77 +242,10 @@ describe('Doot.js', () => {
         .prove()
         .send();
 
-      await settleState();
       expectedSeq += 1n;
 
       const latest = await doot.getPrices();
       expect(latest.priceSeq.toBigInt()).toEqual(before.priceSeq.toBigInt() + 1n);
-    });
-
-    it('does not accept stale settlement proofs', async () => {
-      // First update and settlement
-      setPrice(3, prices[3].add(Field.from(25)));
-
-      const firstPayload = buildPayload(prices);
-      await Mina.transaction(oracle, async () => {
-        await doot.update(
-          map.getRoot(),
-          IpfsCID.fromString('QmPending1'),
-          firstPayload
-        );
-      })
-        .sign([oraclePK])
-        .prove()
-        .send();
-
-      const proof1 = await doot.offchainState.createSettlementProof();
-      await Mina.transaction(oracle, async () => {
-        await doot.settle(proof1);
-      })
-        .sign([oraclePK])
-        .prove()
-        .send();
-      expectedSeq += 1n;
-
-      // Second update and settlement
-      setPrice(4, prices[4].add(Field.from(10)));
-
-      const secondPayload = buildPayload(prices);
-      await Mina.transaction(oracle, async () => {
-        await doot.update(
-          map.getRoot(),
-          IpfsCID.fromString('QmPending2'),
-          secondPayload
-        );
-      })
-        .sign([oraclePK])
-        .prove()
-        .send();
-
-      const proof2 = await doot.offchainState.createSettlementProof();
-      await Mina.transaction(oracle, async () => {
-        await doot.settle(proof2);
-      })
-        .sign([oraclePK])
-        .prove()
-        .send();
-      expectedSeq += 1n;
-
-      // Old proof (proof1) is now stale relative to current commitments
-      const staleSettleAttempt = (async () => {
-        await Mina.transaction(oracle, async () => {
-          await doot.settle(proof1);
-        })
-          .sign([oraclePK])
-          .prove()
-          .send();
-      })();
-
-      await expect(staleSettleAttempt).rejects.toThrow();
-
-      const latest = await doot.getPrices();
-      expect(latest.priceSeq.toBigInt()).toEqual(expectedSeq);
-      expect(latest.lastUpdatedAt.toBigInt()).toBeGreaterThan(1n);
     });
 
     it('verifies tuple signatures from the owner key', async () => {

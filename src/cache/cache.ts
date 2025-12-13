@@ -1,4 +1,4 @@
-import { Doot, offchainState } from '../contracts/Doot.js';
+import { Doot } from '../contracts/Doot.js';
 import { Cache, PublicKey } from 'o1js';
 
 // Uploads the cached files to the set folder.
@@ -11,7 +11,4 @@ let zkappAddress = PublicKey.fromBase58(
 );
 
 let dootZkApp = new Doot(zkappAddress);
-dootZkApp.offchainState.setContractInstance(dootZkApp);
-await offchainState.compile();
-
 await Doot.compile({ cache: cache });
