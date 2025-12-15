@@ -1,30 +1,33 @@
 import { Doot, IpfsCID } from './contracts/Doot.js';
-import { Mina, PublicKey, fetchAccount } from 'o1js';
+import { Mina, fetchAccount, PrivateKey } from 'o1js';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 console.log('Testing Mina L1 on-chain state reads...\n');
 
+const MINA_GRAPHQL_ENDPOINT =
+  'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql';
+
+const DOOT_KEY = process.env.MINA_DOOT_PK;
+const DOOT_PUBLIC_KEY = PrivateKey.fromBase58(
+  DOOT_KEY ? DOOT_KEY : PrivateKey.random().toBase58()
+);
+
 // Mina L1 Network (Mesa testnet)
 const MinaNetwork = Mina.Network({
-  mina: 'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql',
-  archive: 'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql',
+  mina: MINA_GRAPHQL_ENDPOINT,
+  archive: MINA_GRAPHQL_ENDPOINT,
 });
 Mina.setActiveInstance(MinaNetwork);
 
 // Contract address from deployment
-const contractAddress = PublicKey.fromBase58(
-  'B62qjsredUCoyXRkVwbJnXUzVCM3xjoVEsiX5t14KshXGz55jgfqpjm'
-);
+const contractAddress = DOOT_PUBLIC_KEY.toPublicKey();
 const doot = new Doot(contractAddress);
 
 try {
   // Test on-chain state reads only
   console.log('Fetching account data...');
-  await fetchAccount(
-    { publicKey: contractAddress },
-    'https://plain-1-graphql.mina-mesa-network.gcp.o1test.net/graphql'
-  );
+  await fetchAccount({ publicKey: contractAddress }, MINA_GRAPHQL_ENDPOINT);
 
   console.log('Reading on-chain state...');
   const commitment = doot.commitment.get();
